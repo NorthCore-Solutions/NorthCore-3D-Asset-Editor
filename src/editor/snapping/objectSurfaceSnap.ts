@@ -439,7 +439,7 @@ export function analyzeImportedObject3DSnapTargets(
   }
 
   const components = componentRoots.flatMap((componentRoot, index) => {
-    const stableKey = componentRoot.userData.appleCutterComponentKey;
+    const stableKey: unknown = componentRoot.userData.appleCutterComponentKey;
     const componentKey = typeof stableKey === 'string' ? stableKey : String(index);
     const componentId = `${id}:component:${componentKey}`;
     const target = surfaceSnapTargetFromObject3D(componentRoot, componentId);

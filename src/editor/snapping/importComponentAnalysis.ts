@@ -232,7 +232,7 @@ function componentSignature(root: THREE.Object3D): string {
       node: mesh.uuid,
       geometry: mesh.geometry.uuid,
       positionCount: position?.count ?? 0,
-      positionVersion: position?.version ?? 0,
+      positionVersion: position && 'version' in position ? position.version : 0,
       indexCount: index?.count ?? 0,
       indexVersion: index?.version ?? 0,
       matrix: relativeMatrix.elements.map((value) => Number(value.toFixed(6)))
