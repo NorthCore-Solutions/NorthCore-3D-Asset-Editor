@@ -2,7 +2,9 @@ import * as THREE from 'three';
 import type { SceneObjectData, Vec3 } from '../../types/editor';
 import {
   findSurfaceTargetSnap,
+  isSuppressedSurfaceAnchor,
   type ObjectSurfaceSnapResult,
+  type SuppressedSurfaceContact,
   type SurfaceSnapTarget
 } from './objectSurfaceSnap';
 import { findSweptObjectSurfaceSnap } from './sweptObjectSurfaceSnap';
@@ -18,12 +20,13 @@ export interface TranslationSurfaceSnapContact {
   sourceAnchorId: string | null;
   captureRawPosition: Vec3;
   acceptedPosition: Vec3;
+  /** Weltnormale des Kontakts; null nur bei alt gespeicherten Sitzungen. */
+  normal: Vec3 | null;
 }
 
-export interface TranslationSurfaceSnapSuppression {
-  targetAnchorId: string;
+export type TranslationSurfaceSnapSuppression = SuppressedSurfaceContact & {
   rawOrigin: Vec3;
-}
+};
 
 export interface TranslationSurfaceSnapSession {
   active: TranslationSurfaceSnapContact | null;
@@ -58,7 +61,30 @@ function unchanged(position: Vec3): ObjectSurfaceSnapResult {
     targetId: null,
     distance: Number.POSITIVE_INFINITY,
     sourceAnchorId: null,
-    targetAnchorId: null
+    targetAnchorId: null,
+    contactNormal: null
+  };
+}
+
+function heldResolution(
+  active: TranslationSurfaceSnapContact,
+  heldPosition: Vec3,
+  previousCompositeTarget: SurfaceSnapTarget | null
+): TranslationSurfaceSnapResolution {
+  return {
+    result: {
+      position: heldPosition,
+      targetId: active.targetId,
+      distance: 0,
+      sourceAnchorId: active.sourceAnchorId,
+      targetAnchorId: active.targetAnchorId,
+      contactNormal: active.normal
+    },
+    session: {
+      active,
+      suppressed: null,
+      previousCompositeTarget
+    }
   };
 }
 
@@ -73,31 +99,55 @@ function holdOrReleaseContact(
   let active = currentSession.active;
   let suppressed = currentSession.suppressed;
 
-  if (active) {
-    if (distance(rawPosition, active.captureRawPosition) <= RELEASE_DISTANCE) {
+  if (active?.normal) {
+    const normal = new THREE.Vector3(...active.normal);
+    const delta = new THREE.Vector3(...rawPosition)
+      .sub(new THREE.Vector3(...active.captureRawPosition));
+    const normalDelta = delta.dot(normal);
+    const tangential = delta.clone().addScaledVector(normal, -normalDelta);
+
+    if (
+      Math.abs(normalDelta) <= RELEASE_DISTANCE
+      && tangential.length() <= RELEASE_DISTANCE
+    ) {
+      // Nur die Normalen-Komponente rastet ein; die Tangentialbewegung
+      // folgt weiterhin der Rohposition und wird nicht eingefroren.
+      const heldPosition = new THREE.Vector3(...active.acceptedPosition)
+        .add(tangential);
       return {
-        held: {
-          result: {
-            position: [...active.acceptedPosition] as Vec3,
-            targetId: active.targetId,
-            distance: 0,
-            sourceAnchorId: active.sourceAnchorId,
-            targetAnchorId: active.targetAnchorId
-          },
-          session: {
-            active,
-            suppressed: null,
-            previousCompositeTarget: currentSession.previousCompositeTarget
-          }
-        },
+        held: heldResolution(
+          active,
+          [heldPosition.x, heldPosition.y, heldPosition.z],
+          currentSession.previousCompositeTarget
+        ),
         active,
         suppressed: null
       };
     }
 
-    suppressed = active.targetAnchorId
-      ? { targetAnchorId: active.targetAnchorId, rawOrigin: [...rawPosition] as Vec3 }
+    // Nur ein Durchdrücken in den Körper hinein unterdrückt die Kontaktfläche,
+    // damit Nachbar-Anker derselben Fläche nicht sofort wieder einrasten.
+    // Wegziehen und tangentiales Gleiten bleiben ohne Unterdrückung frei.
+    suppressed = normalDelta < -RELEASE_DISTANCE
+      ? {
+        targetId: active.targetId,
+        normal: [...active.normal] as Vec3,
+        rawOrigin: [...rawPosition] as Vec3
+      }
       : null;
+    active = null;
+  } else if (active) {
+    if (distance(rawPosition, active.captureRawPosition) <= RELEASE_DISTANCE) {
+      return {
+        held: heldResolution(
+          active,
+          [...active.acceptedPosition] as Vec3,
+          currentSession.previousCompositeTarget
+        ),
+        active,
+        suppressed: null
+      };
+    }
     active = null;
   }
 
@@ -130,7 +180,8 @@ function capturedResolution(
     targetAnchorId: snapped.targetAnchorId ?? null,
     sourceAnchorId: snapped.sourceAnchorId ?? null,
     captureRawPosition: [...rawPosition] as Vec3,
-    acceptedPosition: [...snapped.position] as Vec3
+    acceptedPosition: [...snapped.position] as Vec3,
+    normal: snapped.contactNormal ?? null
   };
   return {
     result: snapped,
@@ -192,7 +243,7 @@ export function resolveTranslationSurfaceSnap(
     objects,
     positionStep,
     additionalTargets,
-    { ignoredTargetAnchorId: contact.suppressed?.targetAnchorId ?? null }
+    { suppressedContact: contact.suppressed }
   );
   return capturedResolution(
     snapped,
@@ -201,6 +252,27 @@ export function resolveTranslationSurfaceSnap(
     contact.suppressed,
     null
   );
+}
+
+function suppressCompositeTargetAnchors(
+  targets: readonly SurfaceSnapTarget[],
+  suppressed: TranslationSurfaceSnapSuppression | null
+): readonly SurfaceSnapTarget[] {
+  if (!suppressed) return targets;
+  return targets.map((target) => {
+    if (target.id !== suppressed.targetId) return target;
+    const normalMatrix = new THREE.Matrix3().getNormalMatrix(target.matrixWorld);
+    return {
+      ...target,
+      anchors: target.anchors.filter((anchor) => (
+        !isSuppressedSurfaceAnchor(
+          target.id,
+          anchor.normal.clone().applyMatrix3(normalMatrix).normalize(),
+          suppressed
+        )
+      ))
+    };
+  });
 }
 
 /**
@@ -221,14 +293,7 @@ export function resolveCompositeTranslationSurfaceSnap(
   const contact = holdOrReleaseContact(rawPosition, currentSession);
   if (contact.held) return contact.held;
 
-  const filteredTargets = contact.suppressed
-    ? targets.map((target) => ({
-      ...target,
-      anchors: target.anchors.filter((anchor) => (
-        anchor.id !== contact.suppressed?.targetAnchorId
-      ))
-    }))
-    : targets;
+  const filteredTargets = suppressCompositeTargetAnchors(targets, contact.suppressed);
   const sourcePosition = new THREE.Vector3().setFromMatrixPosition(sourceTarget.matrixWorld);
   const distances = compositeDistances(thresholdOrPositionStep);
   const swept = currentSession.previousCompositeTarget
@@ -237,7 +302,7 @@ export function resolveCompositeTranslationSurfaceSnap(
       sourceTarget,
       filteredTargets,
       distances.positionStep,
-      { ignoredTargetAnchorId: contact.suppressed?.targetAnchorId ?? null }
+      { suppressedContact: contact.suppressed }
     )
     : null;
   const nearby = swept ?? findSurfaceTargetSnap(

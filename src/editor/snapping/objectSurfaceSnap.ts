@@ -39,6 +39,30 @@ export interface ObjectSurfaceSnapResult {
   distance: number;
   sourceAnchorId?: string | null;
   targetAnchorId?: string | null;
+  /** Weltnormalen-Richtung des Kontakts (zeigt vom Ziel zur Quelle). */
+  contactNormal?: Vec3 | null;
+}
+
+/**
+ * Nach einer Durchdrück-Freigabe unterdrückte Kontaktfläche:
+ * das gesamte Ziel plus seine Weltnormale, nicht nur ein einzelner Anker.
+ */
+export interface SuppressedSurfaceContact {
+  targetId: string;
+  normal: Vec3;
+}
+
+export const SUPPRESSED_NORMAL_ALIGNMENT = 0.9;
+
+export function isSuppressedSurfaceAnchor(
+  targetId: string,
+  worldNormal: THREE.Vector3,
+  suppressed: SuppressedSurfaceContact | null | undefined
+): boolean {
+  if (!suppressed || targetId !== suppressed.targetId) return false;
+  return worldNormal.dot(
+    new THREE.Vector3(...suppressed.normal)
+  ) >= SUPPRESSED_NORMAL_ALIGNMENT;
 }
 
 export interface SurfaceSnapTarget {
@@ -631,6 +655,7 @@ export function findSurfaceTargetSnap(
   let bestNormalAlignment = Number.POSITIVE_INFINITY;
   let bestSourceAnchorId: string | null = null;
   let bestTargetAnchorId: string | null = null;
+  let bestContactNormal: THREE.Vector3 | null = null;
 
   for (const target of targets) {
     if (
@@ -662,18 +687,20 @@ export function findSurfaceTargetSnap(
         bestNormalAlignment = normalAlignment;
         bestSourceAnchorId = sourceAnchor.id ?? null;
         bestTargetAnchorId = targetAnchor.id ?? null;
+        bestContactNormal = targetAnchor.normal.clone();
       }
     }
   }
 
-  if (!bestCorrection) return unchanged;
+  if (!bestCorrection || !bestContactNormal) return unchanged;
   const snappedPosition = sourcePosition.clone().add(bestCorrection);
   return {
     position: [snappedPosition.x, snappedPosition.y, snappedPosition.z],
     targetId: bestTargetId,
     distance: bestDistance,
     sourceAnchorId: bestSourceAnchorId,
-    targetAnchorId: bestTargetAnchorId
+    targetAnchorId: bestTargetAnchorId,
+    contactNormal: [bestContactNormal.x, bestContactNormal.y, bestContactNormal.z]
   };
 }
 

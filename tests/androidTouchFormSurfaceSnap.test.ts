@@ -79,7 +79,8 @@ describe.each(['Maus', 'Touch'])('gemeinsamer Formen-Snap für %s', () => {
         targetAnchorId: 'target-anchor',
         sourceAnchorId: 'source-anchor',
         captureRawPosition: [1, 2, 3],
-        acceptedPosition: [0.75, 2, 3]
+        acceptedPosition: [0.75, 2, 3],
+        normal: [-1, 0, 0]
       },
       suppressed: null,
       previousCompositeTarget: null
@@ -106,7 +107,8 @@ describe.each(['Maus', 'Touch'])('gemeinsamer Formen-Snap für %s', () => {
         targetAnchorId: 'target-anchor',
         sourceAnchorId: 'source-anchor',
         captureRawPosition: [1, 2, 3],
-        acceptedPosition: [0.75, 2, 3]
+        acceptedPosition: [0.75, 2, 3],
+        normal: [-1, 0, 0]
       },
       suppressed: null,
       previousCompositeTarget: null
@@ -124,6 +126,7 @@ describe.each(['Maus', 'Touch'])('gemeinsamer Formen-Snap für %s', () => {
     expect(resolution.result.targetId).toBeNull();
     expect(resolution.result.position).toEqual(source.position);
     expect(resolution.session.active).toBeNull();
-    expect(resolution.session.suppressed?.targetAnchorId).toBe('target-anchor');
+    expect(resolution.session.suppressed?.targetId).toBe('target-box');
+    expect(resolution.session.suppressed?.normal).toEqual([-1, 0, 0]);
   });
 });

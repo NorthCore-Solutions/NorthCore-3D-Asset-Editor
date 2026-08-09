@@ -1,7 +1,9 @@
 import * as THREE from 'three';
-import type {
-  ObjectSurfaceSnapResult,
-  SurfaceSnapTarget
+import {
+  isSuppressedSurfaceAnchor,
+  type ObjectSurfaceSnapResult,
+  type SuppressedSurfaceContact,
+  type SurfaceSnapTarget
 } from './objectSurfaceSnap';
 import {
   minimumSurfaceProjection,
@@ -27,10 +29,13 @@ interface SweepCandidate {
   normalAlignment: number;
   sourceAnchorId: string | null;
   targetAnchorId: string | null;
+  contactNormal: [number, number, number];
 }
 
 export interface SweptSurfaceTargetSnapOptions {
   ignoredTargetAnchorId?: string | null;
+  /** Nach einer Durchdrück-Freigabe unterdrückte Kontaktfläche. */
+  suppressedContact?: SuppressedSurfaceContact | null;
 }
 
 interface ContactNormals {
@@ -216,6 +221,9 @@ export function findSweptSurfaceTargetSnap(
           options.ignoredTargetAnchorId
           && targetAnchor.id === options.ignoredTargetAnchorId
         ) continue;
+        if (isSuppressedSurfaceAnchor(target.id, targetAnchor.normal, options.suppressedContact)) {
+          continue;
+        }
 
         const normals = contactNormals(
           currentAnchor,
@@ -270,7 +278,8 @@ export function findSweptSurfaceTargetSnap(
           lateralDistance,
           normalAlignment: normals.source.dot(normals.target),
           sourceAnchorId: currentAnchor.id ?? null,
-          targetAnchorId: targetAnchor.id ?? null
+          targetAnchorId: targetAnchor.id ?? null,
+          contactNormal: [normals.target.x, normals.target.y, normals.target.z]
         };
         if (betterCandidate(candidate, best)) best = candidate;
       }
@@ -283,7 +292,8 @@ export function findSweptSurfaceTargetSnap(
       targetId: best.targetId,
       distance: best.distance,
       sourceAnchorId: best.sourceAnchorId,
-      targetAnchorId: best.targetAnchorId
+      targetAnchorId: best.targetAnchorId,
+      contactNormal: best.contactNormal
     }
     : null;
 }

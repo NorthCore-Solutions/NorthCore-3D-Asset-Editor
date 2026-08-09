@@ -15,7 +15,8 @@ function activeSession(): TranslationSurfaceSnapSession {
       targetAnchorId: 'target:anchor:1',
       sourceAnchorId: 'source:anchor:1',
       captureRawPosition: [0, 0, 0],
-      acceptedPosition: [2, 3, 4]
+      acceptedPosition: [2, 3, 4],
+      normal: [-1, 0, 0]
     },
     suppressed: null,
     previousCompositeTarget: null
@@ -55,6 +56,22 @@ describe('lokale Formen-Snap-Sitzung des Viewports', () => {
     expect(resolution.result.targetId).toBe('target');
   });
 
+  it('lässt die Tangentialbewegung während des Haltens frei', () => {
+    const source = createSceneObject('box');
+    source.position = [2, 3.1, 4];
+    const resolution = resolveTranslationSurfaceSnap(
+      source,
+      [],
+      STEP,
+      [0, 0.1, 0],
+      activeSession()
+    );
+
+    expect(resolution.result.targetId).toBe('target');
+    expect(resolution.result.position).toEqual([2, 3.1, 4]);
+    expect(resolution.session.active).not.toBeNull();
+  });
+
   it('gibt seitliches Ziehen nach derselben Freigabestrecke frei', () => {
     const source = createSceneObject('box');
     source.position = [2, 3.2, 4];
@@ -69,9 +86,26 @@ describe('lokale Formen-Snap-Sitzung des Viewports', () => {
     expect(resolution.result.targetId).toBeNull();
     expect(resolution.result.position).toEqual(source.position);
     expect(resolution.session.active).toBeNull();
+    expect(resolution.session.suppressed).toBeNull();
   });
 
-  it('unterdrückt nach Freigabe nur den konkreten Zielpunkt', () => {
+  it('gibt beim Wegziehen von der Fläche ohne Unterdrückung frei', () => {
+    const source = createSceneObject('box');
+    source.position = [1.8, 3, 4];
+    const resolution = resolveTranslationSurfaceSnap(
+      source,
+      [],
+      STEP,
+      [-0.2, 0, 0],
+      activeSession()
+    );
+
+    expect(resolution.result.targetId).toBeNull();
+    expect(resolution.session.active).toBeNull();
+    expect(resolution.session.suppressed).toBeNull();
+  });
+
+  it('unterdrückt nach dem Durchdrücken die gesamte Kontaktfläche', () => {
     const source = createSceneObject('box');
     source.position = [2.2, 3, 4];
     const resolution = resolveTranslationSurfaceSnap(
@@ -83,7 +117,8 @@ describe('lokale Formen-Snap-Sitzung des Viewports', () => {
     );
 
     expect(resolution.session.suppressed).toEqual({
-      targetAnchorId: 'target:anchor:1',
+      targetId: 'target',
+      normal: [-1, 0, 0],
       rawOrigin: [0.2, 0, 0]
     });
   });
