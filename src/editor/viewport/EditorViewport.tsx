@@ -24,6 +24,11 @@ import {
   surfaceSnapTargetFromSceneObject,
   surfaceSnapTargetFromSceneObjects
 } from '../snapping/objectSurfaceSnap';
+import {
+  isScaleAxisHandleVisible,
+  type ScaleAxis,
+  type ScaleSide
+} from './scaleAxisHandleVisibility';
 
 interface OrbitControlApi {
   target: THREE.Vector3;
@@ -31,8 +36,6 @@ interface OrbitControlApi {
   update: () => void;
 }
 
-type ScaleAxis = 'X' | 'Y' | 'Z';
-type ScaleSide = -1 | 1;
 type CornerSides = [ScaleSide, ScaleSide, ScaleSide];
 type MeshRegistry = MutableRefObject<Map<string, THREE.Mesh>>;
 
@@ -119,7 +122,6 @@ const CORNER_SCALE_HITBOX_SIZE = 1.55;
 // Die Achsen-Skalierpfeile verwenden Geometrie, Screen-Size-Logik und
 // Sichtbarkeitsregeln 1:1 der Verschiebe-Pfeile der TransformControls.
 const SCALE_GIZMO_SIZE = 1.15;
-const SCALE_AXIS_HIDE_THRESHOLD = 0.99;
 const SCALE_ARROW_SHAFT_GEOMETRY = new THREE.CylinderGeometry(0.0075, 0.0075, 0.5, 3);
 SCALE_ARROW_SHAFT_GEOMETRY.translate(0, 0.25, 0);
 const SCALE_ARROW_TIP_GEOMETRY = new THREE.CylinderGeometry(0, 0.04, 0.1, 12);
@@ -387,14 +389,14 @@ function ScaleHandle({ mesh, bounds, axis, side, color, onPointerDown }: {
     handle.quaternion.copy(mesh.quaternion);
     handle.scale.setScalar(scaleGizmoWorldScale(camera, handle.position));
 
-    // Pro Achse bleibt nur der kameraseitige Pfeil sichtbar; der hintere wird
-    // ausgeblendet. Die Regel zum Ausblenden bei nahezu axialem Kamerablick
-    // (analog zu den Verschiebe-Pfeilen) bleibt erhalten.
+    // Sichtbarkeit 1:1 wie die Verschiebe-Pfeile der TransformControls: Pro
+    // Achse wird immer die positive Richtung gezeigt (kein kameraabhängiger
+    // Seitenwechsel); die Achse entfällt nur bei nahezu axialem Blick. Die
+    // Objektrotation fließt über das Welt-Quaternion in die Achsrichtung ein.
     mesh.getWorldQuaternion(scaleHandleQuaternion);
     scaleHandleAxis.copy(axisVector(axis, side)).applyQuaternion(scaleHandleQuaternion);
     cameraEyeVector(camera, handle.position, scaleHandleEye);
-    const facing = scaleHandleAxis.dot(scaleHandleEye);
-    handle.visible = facing > 0 && facing <= SCALE_AXIS_HIDE_THRESHOLD;
+    handle.visible = isScaleAxisHandleVisible(side, scaleHandleAxis, scaleHandleEye);
   });
 
   return (
