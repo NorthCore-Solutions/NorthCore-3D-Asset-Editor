@@ -116,6 +116,18 @@ const CENTER_SCALE_VISUAL_RADIUS = 0.11;
 const CENTER_SCALE_HITBOX_RADIUS = 0.28;
 const CORNER_SCALE_VISUAL_SIZE = 1.16;
 const CORNER_SCALE_HITBOX_SIZE = 1.55;
+// Die Achsen-Skalierpfeile verwenden Geometrie, Screen-Size-Logik und
+// Sichtbarkeitsregeln 1:1 der Verschiebe-Pfeile der TransformControls.
+const SCALE_GIZMO_SIZE = 1.15;
+const SCALE_AXIS_HIDE_THRESHOLD = 0.99;
+const SCALE_ARROW_SHAFT_GEOMETRY = new THREE.CylinderGeometry(0.0075, 0.0075, 0.5, 3);
+SCALE_ARROW_SHAFT_GEOMETRY.translate(0, 0.25, 0);
+const SCALE_ARROW_TIP_GEOMETRY = new THREE.CylinderGeometry(0, 0.04, 0.1, 12);
+SCALE_ARROW_TIP_GEOMETRY.translate(0, 0.05, 0);
+const SCALE_ARROW_PICKER_GEOMETRY = new THREE.CylinderGeometry(0.2, 0, 0.6, 4);
+const scaleHandleEye = new THREE.Vector3();
+const scaleHandleAxis = new THREE.Vector3();
+const scaleHandleQuaternion = new THREE.Quaternion();
 const CORNERS: CornerSides[] = [
   [-1, -1, -1], [-1, -1, 1], [-1, 1, -1], [-1, 1, 1],
   [1, -1, -1], [1, -1, 1], [1, 1, -1], [1, 1, 1]
@@ -158,6 +170,27 @@ const scaleHandleWorldSize = (mesh: THREE.Mesh, bounds: THREE.Box3): number => {
     + Math.abs(localSize.z * mesh.scale.z)
   ) / 3;
   return Math.max(0.0001, averageWorldSize * SCALE_HANDLE_SIZE_RATIO);
+};
+
+// Screen-Size-Logik der TransformControls: Die Pfeile behalten beim
+// Herauszoomen ihre Bildschirmgröße, exakt wie die Verschiebe-Pfeile.
+const scaleGizmoWorldScale = (camera: THREE.Camera, worldPosition: THREE.Vector3): number => {
+  let factor: number;
+  const orthographic = camera as THREE.OrthographicCamera;
+  if (orthographic.isOrthographicCamera) {
+    factor = (orthographic.top - orthographic.bottom) / orthographic.zoom;
+  } else {
+    const perspective = camera as THREE.PerspectiveCamera;
+    factor = worldPosition.distanceTo(camera.position) * Math.min(1.9 * Math.tan((Math.PI * perspective.fov) / 360) / perspective.zoom, 7);
+  }
+  return (factor * SCALE_GIZMO_SIZE) / 4;
+};
+
+const cameraEyeVector = (camera: THREE.Camera, worldPosition: THREE.Vector3, target: THREE.Vector3): THREE.Vector3 => {
+  if ((camera as THREE.OrthographicCamera).isOrthographicCamera) {
+    return camera.getWorldDirection(target).negate();
+  }
+  return target.copy(camera.position).sub(worldPosition).normalize();
 };
 
 function KeyboardCameraControls({ active }: { active: boolean }) {
@@ -335,7 +368,13 @@ function ScaleHandle({ mesh, bounds, axis, side, color, onPointerDown }: {
   color: string;
   onPointerDown: (axis: ScaleAxis, side: ScaleSide, event: ThreeEvent<PointerEvent>) => void;
 }) {
-  const handleRef = useRef<THREE.Mesh>(null);
+  const handleRef = useRef<THREE.Group>(null);
+  const camera = useThree((state) => state.camera);
+  // Pfeile zeigen wie bei den Verschiebe-Pfeilen entlang der Achse nach außen.
+  const arrowRotation = useMemo(
+    () => new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), axisVector(axis, side)),
+    [axis, side]
+  );
 
   useFrame(() => {
     const handle = handleRef.current;
@@ -346,14 +385,32 @@ function ScaleHandle({ mesh, bounds, axis, side, color, onPointerDown }: {
     setAxisValue(localPoint, axis, edge);
     handle.position.copy(mesh.localToWorld(localPoint));
     handle.quaternion.copy(mesh.quaternion);
-    handle.scale.setScalar(scaleHandleWorldSize(mesh, bounds) / 0.72);
+    handle.scale.setScalar(scaleGizmoWorldScale(camera, handle.position));
+
+    // Pro Achse bleibt nur der kameraseitige Pfeil sichtbar; der hintere wird
+    // ausgeblendet. Die Regel zum Ausblenden bei nahezu axialem Kamerablick
+    // (analog zu den Verschiebe-Pfeilen) bleibt erhalten.
+    mesh.getWorldQuaternion(scaleHandleQuaternion);
+    scaleHandleAxis.copy(axisVector(axis, side)).applyQuaternion(scaleHandleQuaternion);
+    cameraEyeVector(camera, handle.position, scaleHandleEye);
+    const facing = scaleHandleAxis.dot(scaleHandleEye);
+    handle.visible = facing > 0 && facing <= SCALE_AXIS_HIDE_THRESHOLD;
   });
 
   return (
-    <mesh ref={handleRef} renderOrder={1000} onPointerDown={(event) => onPointerDown(axis, side, event)}>
-      <boxGeometry args={[0.72, 0.72, 0.72]} />
-      <meshBasicMaterial color={color} transparent opacity={1} depthTest={false} depthWrite={false} toneMapped={false} />
-    </mesh>
+    <group ref={handleRef} renderOrder={1000}>
+      <group quaternion={arrowRotation}>
+        <mesh geometry={SCALE_ARROW_SHAFT_GEOMETRY} renderOrder={1000}>
+          <meshBasicMaterial color={color} transparent opacity={1} depthTest={false} depthWrite={false} fog={false} toneMapped={false} />
+        </mesh>
+        <mesh geometry={SCALE_ARROW_TIP_GEOMETRY} position={[0, 0.5, 0]} renderOrder={1000}>
+          <meshBasicMaterial color={color} transparent opacity={1} depthTest={false} depthWrite={false} fog={false} toneMapped={false} />
+        </mesh>
+        <mesh geometry={SCALE_ARROW_PICKER_GEOMETRY} position={[0, 0.3, 0]} renderOrder={1000} onPointerDown={(event) => onPointerDown(axis, side, event)}>
+          <meshBasicMaterial transparent opacity={0} depthTest={false} depthWrite={false} fog={false} toneMapped={false} />
+        </mesh>
+      </group>
+    </group>
   );
 }
 
