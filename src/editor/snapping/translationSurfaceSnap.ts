@@ -2,16 +2,13 @@ import * as THREE from 'three';
 import type { SceneObjectData, Vec3 } from '../../types/editor';
 import {
   findSurfaceTargetSnap,
-  isSuppressedSurfaceAnchor,
   type ObjectSurfaceSnapResult,
-  type SuppressedSurfaceContact,
   type SurfaceSnapTarget
 } from './objectSurfaceSnap';
 import { findSweptObjectSurfaceSnap } from './sweptObjectSurfaceSnap';
 import { findSweptSurfaceTargetSnap } from './sweptSurfaceTargetSnap';
 
 const RELEASE_DISTANCE = 0.14;
-const REARM_DISTANCE = 0.35;
 const MAX_WORLD_THRESHOLD = 0.12;
 
 export interface TranslationSurfaceSnapContact {
@@ -24,13 +21,8 @@ export interface TranslationSurfaceSnapContact {
   normal: Vec3 | null;
 }
 
-export type TranslationSurfaceSnapSuppression = SuppressedSurfaceContact & {
-  rawOrigin: Vec3;
-};
-
 export interface TranslationSurfaceSnapSession {
   active: TranslationSurfaceSnapContact | null;
-  suppressed: TranslationSurfaceSnapSuppression | null;
   previousCompositeTarget: SurfaceSnapTarget | null;
 }
 
@@ -42,7 +34,6 @@ export interface TranslationSurfaceSnapResolution {
 export function createTranslationSurfaceSnapSession(): TranslationSurfaceSnapSession {
   return {
     active: null,
-    suppressed: null,
     previousCompositeTarget: null
   };
 }
@@ -82,7 +73,6 @@ function heldResolution(
     },
     session: {
       active,
-      suppressed: null,
       previousCompositeTarget
     }
   };
@@ -94,10 +84,8 @@ function holdOrReleaseContact(
 ): {
   held: TranslationSurfaceSnapResolution | null;
   active: TranslationSurfaceSnapContact | null;
-  suppressed: TranslationSurfaceSnapSuppression | null;
 } {
-  let active = currentSession.active;
-  let suppressed = currentSession.suppressed;
+  const active = currentSession.active;
 
   if (active?.normal) {
     const normal = new THREE.Vector3(...active.normal);
@@ -120,23 +108,16 @@ function holdOrReleaseContact(
           [heldPosition.x, heldPosition.y, heldPosition.z],
           currentSession.previousCompositeTarget
         ),
-        active,
-        suppressed: null
+        active
       };
     }
 
-    // Nur ein Durchdrücken in den Körper hinein unterdrückt die Kontaktfläche,
-    // damit Nachbar-Anker derselben Fläche nicht sofort wieder einrasten.
-    // Wegziehen und tangentiales Gleiten bleiben ohne Unterdrückung frei.
-    suppressed = normalDelta < -RELEASE_DISTANCE
-      ? {
-        targetId: active.targetId,
-        normal: [...active.normal] as Vec3,
-        rawOrigin: [...rawPosition] as Vec3
-      }
-      : null;
-    active = null;
-  } else if (active) {
+    // Freigabe ohne Unterdrückung: Ob die Fläche wieder einrasten darf,
+    // entscheidet allein das Fangband des Sweeps an der Rohposition.
+    return { held: null, active: null };
+  }
+
+  if (active) {
     if (distance(rawPosition, active.captureRawPosition) <= RELEASE_DISTANCE) {
       return {
         held: heldResolution(
@@ -144,24 +125,17 @@ function holdOrReleaseContact(
           [...active.acceptedPosition] as Vec3,
           currentSession.previousCompositeTarget
         ),
-        active,
-        suppressed: null
+        active
       };
     }
-    active = null;
   }
-
-  if (suppressed && distance(rawPosition, suppressed.rawOrigin) >= REARM_DISTANCE) {
-    suppressed = null;
-  }
-  return { held: null, active, suppressed };
+  return { held: null, active: null };
 }
 
 function capturedResolution(
   snapped: ObjectSurfaceSnapResult | null,
   rawPosition: Vec3,
   unchangedPosition: Vec3,
-  suppressed: TranslationSurfaceSnapSuppression | null,
   previousCompositeTarget: SurfaceSnapTarget | null
 ): TranslationSurfaceSnapResolution {
   if (!snapped?.targetId) {
@@ -169,7 +143,6 @@ function capturedResolution(
       result: unchanged(unchangedPosition),
       session: {
         active: null,
-        suppressed,
         previousCompositeTarget
       }
     };
@@ -187,7 +160,6 @@ function capturedResolution(
     result: snapped,
     session: {
       active,
-      suppressed: null,
       previousCompositeTarget
     }
   };
@@ -242,37 +214,9 @@ export function resolveTranslationSurfaceSnap(
     source,
     objects,
     positionStep,
-    additionalTargets,
-    { suppressedContact: contact.suppressed }
+    additionalTargets
   );
-  return capturedResolution(
-    snapped,
-    rawPosition,
-    source.position,
-    contact.suppressed,
-    null
-  );
-}
-
-function suppressCompositeTargetAnchors(
-  targets: readonly SurfaceSnapTarget[],
-  suppressed: TranslationSurfaceSnapSuppression | null
-): readonly SurfaceSnapTarget[] {
-  if (!suppressed) return targets;
-  return targets.map((target) => {
-    if (target.id !== suppressed.targetId) return target;
-    const normalMatrix = new THREE.Matrix3().getNormalMatrix(target.matrixWorld);
-    return {
-      ...target,
-      anchors: target.anchors.filter((anchor) => (
-        !isSuppressedSurfaceAnchor(
-          target.id,
-          anchor.normal.clone().applyMatrix3(normalMatrix).normalize(),
-          suppressed
-        )
-      ))
-    };
-  });
+  return capturedResolution(snapped, rawPosition, source.position, null);
 }
 
 /**
@@ -293,21 +237,19 @@ export function resolveCompositeTranslationSurfaceSnap(
   const contact = holdOrReleaseContact(rawPosition, currentSession);
   if (contact.held) return contact.held;
 
-  const filteredTargets = suppressCompositeTargetAnchors(targets, contact.suppressed);
   const sourcePosition = new THREE.Vector3().setFromMatrixPosition(sourceTarget.matrixWorld);
   const distances = compositeDistances(thresholdOrPositionStep);
   const swept = currentSession.previousCompositeTarget
     ? findSweptSurfaceTargetSnap(
       currentSession.previousCompositeTarget,
       sourceTarget,
-      filteredTargets,
-      distances.positionStep,
-      { suppressedContact: contact.suppressed }
+      targets,
+      distances.positionStep
     )
     : null;
   const nearby = swept ?? findSurfaceTargetSnap(
     sourceTarget,
-    filteredTargets,
+    targets,
     sourcePosition,
     distances.worldThreshold
   );
@@ -316,11 +258,5 @@ export function resolveCompositeTranslationSurfaceSnap(
     ?? [sourcePosition.x, sourcePosition.y, sourcePosition.z] as Vec3;
   const acceptedTarget = compositeTargetAtPosition(sourceTarget, acceptedPosition);
 
-  return capturedResolution(
-    snapped,
-    rawPosition,
-    acceptedPosition,
-    contact.suppressed,
-    acceptedTarget
-  );
+  return capturedResolution(snapped, rawPosition, acceptedPosition, acceptedTarget);
 }

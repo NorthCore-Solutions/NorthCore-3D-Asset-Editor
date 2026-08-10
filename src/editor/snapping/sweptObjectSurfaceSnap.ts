@@ -1,10 +1,8 @@
 import * as THREE from 'three';
 import type { SceneObjectData, Vec3 } from '../../types/editor';
 import {
-  isSuppressedSurfaceAnchor,
   surfaceSnapTargetFromSceneObject,
   type ObjectSurfaceSnapResult,
-  type SuppressedSurfaceContact,
   type SurfaceSnapTarget
 } from './objectSurfaceSnap';
 import {
@@ -21,6 +19,9 @@ const MIN_APPROACH_ALIGNMENT = 0.12;
 const MAX_CAPTURE_DISTANCE = 0.12;
 const MAX_TANGENTIAL_TOLERANCE = 0.16;
 const THIN_DIMENSION = 0.0001;
+const AT_SURFACE_DISTANCE = 0.001;
+const SLIDING_PLANE_ALIGNMENT = 0.98;
+const SLIDING_PLANE_TOLERANCE = 0.03;
 
 interface SweepCandidate {
   position: Vec3;
@@ -36,8 +37,6 @@ interface SweepCandidate {
 
 export interface SweptObjectSurfaceSnapOptions {
   ignoredTargetAnchorId?: string | null;
-  /** Nach einer Durchdrück-Freigabe unterdrückte Kontaktfläche. */
-  suppressedContact?: SuppressedSurfaceContact | null;
 }
 
 interface ContactNormals {
@@ -250,6 +249,7 @@ export function findSweptObjectSurfaceSnap(
   const hashCellSize = Math.max(0.08, tangentialTolerance);
   const broadPhasePadding = tangentialTolerance + captureDistance;
   const sourceIsThin = isThinTarget(sourceTarget);
+  const sourceWorldBounds = worldBounds(sourceTarget, 0);
   const targets = targetsForSweep(source, objects, positionStep, additionalTargets);
   let best: SweepCandidate | null = null;
 
@@ -260,6 +260,9 @@ export function findSweptObjectSurfaceSnap(
     const targetAnchors = transformSurfaceSnapAnchors(target.anchors, target.matrixWorld);
     const targetHash = buildAnchorHash(targetAnchors, hashCellSize);
     const expandedTargetBounds = worldBounds(target, broadPhasePadding);
+    // Gleitende Deckung gilt nur bei tatsächlicher Penetration: Ohne
+    // Überlappung der Körper bleibt ein seitliches Vorbeiziehen frei.
+    const slidingAllowed = sourceWorldBounds.intersectsBox(worldBounds(target, 0));
 
     for (let index = 0; index < currentAnchors.length; index += 1) {
       const currentAnchor = currentAnchors[index];
@@ -277,9 +280,6 @@ export function findSweptObjectSurfaceSnap(
           options.ignoredTargetAnchorId
           && targetAnchor.id === options.ignoredTargetAnchorId
         ) continue;
-        if (isSuppressedSurfaceAnchor(target.id, targetAnchor.normal, options.suppressedContact)) {
-          continue;
-        }
 
         const normals = contactNormals(
           currentAnchor,
@@ -288,7 +288,52 @@ export function findSweptObjectSurfaceSnap(
           sourceIsThin,
           targetIsThin
         );
-        if (!opposingAndApproaching(normals, direction)) continue;
+        if (!opposingAndApproaching(normals, direction)) {
+          // Gleitende Deckungskandidaten: gleichgerichtete, deckungsgleiche
+          // Flächen überstreichen sich beim Durchziehen. Rastet ein, wenn sich
+          // Quell- und Zielanker entlang der Bewegung decken — das sind die
+          // inneren Apfelschneider-Linien. Kein Festklemmen: Außerhalb des
+          // Fangbands bleibt der Weg frei.
+          if (!slidingAllowed) continue;
+          const planeAlignment = currentAnchor.normal.dot(targetAnchor.normal);
+          if (planeAlignment < SLIDING_PLANE_ALIGNMENT) continue;
+
+          const pairDelta = targetAnchor.position.clone().sub(currentAnchor.position);
+          const planeDistance = Math.abs(pairDelta.dot(targetAnchor.normal));
+          if (planeDistance > SLIDING_PLANE_TOLERANCE) continue;
+
+          const currentAlong = pairDelta.dot(direction);
+          if (Math.abs(currentAlong) > captureDistance + EPSILON) continue;
+          const previousAlong = currentAlong + movementLength;
+          if (Math.abs(previousAlong) <= Math.abs(currentAlong) + EPSILON) continue;
+
+          const alongComponent = direction.clone().multiplyScalar(currentAlong);
+          const planeOffset = targetAnchor.normal.clone()
+            .multiplyScalar(pairDelta.dot(targetAnchor.normal));
+          const lateral = pairDelta.clone().sub(alongComponent).sub(planeOffset).length();
+          if (lateral > tangentialTolerance + EPSILON) continue;
+
+          const slidingTravel = THREE.MathUtils.clamp(
+            previousAlong / movementLength,
+            0,
+            1
+          );
+          const slidingPosition = sourcePosition.clone()
+            .addScaledVector(direction, currentAlong);
+          const slidingCandidate: SweepCandidate = {
+            position: [slidingPosition.x, slidingPosition.y, slidingPosition.z],
+            targetId: target.id,
+            distance: Math.abs(currentAlong),
+            travel: slidingTravel,
+            lateralDistance: lateral,
+            normalAlignment: planeAlignment,
+            sourceAnchorId: currentAnchor.id ?? null,
+            targetAnchorId: targetAnchor.id ?? null,
+            contactNormal: [direction.x, direction.y, direction.z]
+          };
+          if (betterCandidate(slidingCandidate, best)) best = slidingCandidate;
+          continue;
+        }
 
         const projectionKey = normalKey(normals.target);
         let currentSupportProjection = supportProjectionCache.get(projectionKey);
@@ -306,6 +351,13 @@ export function findSweptObjectSurfaceSnap(
         if (separationChange >= -EPSILON) continue;
         if (previousSeparation < -captureDistance - EPSILON) continue;
         if (currentSeparation > captureDistance + EPSILON) continue;
+        // Kein erneutes Festklemmen hinter der Fläche: Lag die Quelle bereits
+        // auf der Fläche (akzeptierter Kontakt), rastet sie nur innerhalb des
+        // Fangbands wieder ein; dahinter bleibt der Weg in den Körper frei.
+        if (
+          previousSeparation <= AT_SURFACE_DISTANCE
+          && currentSeparation < -captureDistance - EPSILON
+        ) continue;
 
         const approachAlongTargetNormal = direction.dot(normals.target);
         if (approachAlongTargetNormal >= -MIN_APPROACH_ALIGNMENT) continue;

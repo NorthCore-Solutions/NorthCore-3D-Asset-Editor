@@ -232,7 +232,7 @@ describe.each(['Desktop', 'Android'])('durchgängiger Formen-Snap auf %s', (plat
     );
   });
 
-  it('hält den Kontakt auch beim nächsten Ziehschritt in die Form hinein', () => {
+  it('gibt den Kontakt beim nächsten Ziehschritt tief in die Form frei', () => {
     const setup = crossingSetup('sphere', 'box');
     const first = findAppleCutterSurfaceSnap(
       setup.candidate,
@@ -241,9 +241,11 @@ describe.each(['Desktop', 'Android'])('durchgängiger Formen-Snap auf %s', (plat
     );
     expect(first.targetId).toBe(setup.target.id);
 
+    // Aus dem akzeptierten Kontakt heraus tief in den Körper gezogen:
+    // kein erneutes Festklemmen an der bereits überwundenen Fläche.
     const snappedPrevious = withPosition(setup.candidate, first.position);
     const deeperCandidate = translatedObject(
-      setup.candidate,
+      snappedPrevious,
       setup.movementDirection.clone().multiplyScalar(STEP * 2)
     );
     const second = findAppleCutterSurfaceSnap(
@@ -252,9 +254,37 @@ describe.each(['Desktop', 'Android'])('durchgängiger Formen-Snap auf %s', (plat
       STEP
     );
 
+    expect(second.targetId).toBeNull();
+    expect(second.position[0]).toBeCloseTo(deeperCandidate.position[0], 6);
+    expect(second.position[1]).toBeCloseTo(deeperCandidate.position[1], 6);
+    expect(second.position[2]).toBeCloseTo(deeperCandidate.position[2], 6);
+  });
+
+  it('hält den Kontakt beim Verweilen innerhalb des Fangbands', () => {
+    const setup = crossingSetup('sphere', 'box');
+    const first = findAppleCutterSurfaceSnap(
+      setup.candidate,
+      [setup.previous, setup.target],
+      STEP
+    );
+    expect(first.targetId).toBe(setup.target.id);
+
+    // Nur ein kleines Stück über die Fläche hinaus (innerhalb des Fangbands):
+    // der Kontakt bleibt magnetisch bestehen.
+    const snappedPrevious = withPosition(setup.candidate, first.position);
+    const hoverCandidate = translatedObject(
+      snappedPrevious,
+      setup.movementDirection.clone().multiplyScalar(STEP * 0.2)
+    );
+    const second = findAppleCutterSurfaceSnap(
+      hoverCandidate,
+      [snappedPrevious, setup.target],
+      STEP
+    );
+
     expect(second.targetId).toBe(setup.target.id);
     expectPhysicalContact(
-      deeperCandidate,
+      hoverCandidate,
       setup.target,
       setup.movementDirection,
       second
@@ -305,6 +335,44 @@ describe.each(['Desktop', 'Android'])('durchgängiger Formen-Snap auf %s', (plat
 
     expect(result.targetId).toBe(target.id);
     expectPhysicalContact(candidate, target, new THREE.Vector3(1, 0, 0), result);
+  });
+
+  it('stoppt beim Durchziehen nacheinander an den inneren Apfelschneider-Linien', () => {
+    const target = withPosition(createSceneObject('box'), [0, 0.5, 0]);
+    target.id = 'target-box';
+    const source = createSceneObject('box');
+    source.id = 'source-box';
+
+    // Stop-Raster: Ziel-Anker x ∈ {-0.5, -0.375, -0.125, 0.125, 0.375, 0.5},
+    // Quell-Offsets ebenso → Quellmittelpunkte im 0.125-Raster von -1 bis 1
+    // (1.0 → 0.125 + 0.25 + 0.25 + 0.25 + 0.125).
+    const STOP_STEP = 0.125;
+    const isStop = (x: number) => {
+      const k = Math.round((x + 1) / STOP_STEP);
+      return k >= 0 && k <= 16 && Math.abs(x - (-1 + k * STOP_STEP)) < 1e-6;
+    };
+
+    const snappedPositions: number[] = [];
+    let previous = withPosition(source, [-1.6, 0.5, 0]);
+    for (let step = 1; step <= 64; step += 1) {
+      const candidate = withPosition(source, [-1.6 + step * 0.05, 0.5, 0]);
+      const result = findAppleCutterSurfaceSnap(candidate, [previous, target], STEP);
+      if (result.targetId === target.id) snappedPositions.push(result.position[0]);
+      previous = withPosition(source, result.position);
+    }
+
+    // Außen-Snap an der Wand plus mehrere innere Linien werden getroffen,
+    // jeder Stop liegt auf dem Apfelschneider-Raster.
+    expect(snappedPositions.length).toBeGreaterThan(0);
+    for (const x of snappedPositions) {
+      expect(isStop(x)).toBe(true);
+    }
+    expect(snappedPositions.some((x) => Math.abs(x - -1) < 1e-6)).toBe(true);
+    expect(new Set(snappedPositions.map((x) => Math.round((x + 1) / STOP_STEP))).size)
+      .toBeGreaterThanOrEqual(4);
+
+    // Vollständiger Durchzug: die letzte Position folgt frei der Rohbewegung.
+    expect(previous.position[0]).toBeCloseTo(1.6, 6);
   });
 });
 

@@ -18,7 +18,6 @@ function activeSession(): TranslationSurfaceSnapSession {
       acceptedPosition: [2, 3, 4],
       normal: [-1, 0, 0]
     },
-    suppressed: null,
     previousCompositeTarget: null
   };
 }
@@ -31,12 +30,10 @@ describe('lokale Formen-Snap-Sitzung des Viewports', () => {
     expect(first).not.toBe(second);
     expect(first).toEqual({
       active: null,
-      suppressed: null,
       previousCompositeTarget: null
     });
     expect(second).toEqual({
       active: null,
-      suppressed: null,
       previousCompositeTarget: null
     });
   });
@@ -86,10 +83,9 @@ describe('lokale Formen-Snap-Sitzung des Viewports', () => {
     expect(resolution.result.targetId).toBeNull();
     expect(resolution.result.position).toEqual(source.position);
     expect(resolution.session.active).toBeNull();
-    expect(resolution.session.suppressed).toBeNull();
   });
 
-  it('gibt beim Wegziehen von der Fläche ohne Unterdrückung frei', () => {
+  it('gibt beim Wegziehen von der Fläche frei', () => {
     const source = createSceneObject('box');
     source.position = [1.8, 3, 4];
     const resolution = resolveTranslationSurfaceSnap(
@@ -101,11 +97,11 @@ describe('lokale Formen-Snap-Sitzung des Viewports', () => {
     );
 
     expect(resolution.result.targetId).toBeNull();
+    expect(resolution.result.position).toEqual(source.position);
     expect(resolution.session.active).toBeNull();
-    expect(resolution.session.suppressed).toBeNull();
   });
 
-  it('unterdrückt nach dem Durchdrücken die gesamte Kontaktfläche', () => {
+  it('gibt beim Durchdrücken frei, ohne Snap-Kandidaten zu unterdrücken', () => {
     const source = createSceneObject('box');
     source.position = [2.2, 3, 4];
     const resolution = resolveTranslationSurfaceSnap(
@@ -116,10 +112,12 @@ describe('lokale Formen-Snap-Sitzung des Viewports', () => {
       activeSession()
     );
 
-    expect(resolution.session.suppressed).toEqual({
-      targetId: 'target',
-      normal: [-1, 0, 0],
-      rawOrigin: [0.2, 0, 0]
+    expect(resolution.result.targetId).toBeNull();
+    expect(resolution.result.position).toEqual(source.position);
+    expect(resolution.session.active).toBeNull();
+    expect(resolution.session).toEqual({
+      active: null,
+      previousCompositeTarget: null
     });
   });
 });

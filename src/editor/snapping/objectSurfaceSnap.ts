@@ -43,28 +43,6 @@ export interface ObjectSurfaceSnapResult {
   contactNormal?: Vec3 | null;
 }
 
-/**
- * Nach einer Durchdrück-Freigabe unterdrückte Kontaktfläche:
- * das gesamte Ziel plus seine Weltnormale, nicht nur ein einzelner Anker.
- */
-export interface SuppressedSurfaceContact {
-  targetId: string;
-  normal: Vec3;
-}
-
-export const SUPPRESSED_NORMAL_ALIGNMENT = 0.9;
-
-export function isSuppressedSurfaceAnchor(
-  targetId: string,
-  worldNormal: THREE.Vector3,
-  suppressed: SuppressedSurfaceContact | null | undefined
-): boolean {
-  if (!suppressed || targetId !== suppressed.targetId) return false;
-  return worldNormal.dot(
-    new THREE.Vector3(...suppressed.normal)
-  ) >= SUPPRESSED_NORMAL_ALIGNMENT;
-}
-
 export interface SurfaceSnapTarget {
   id: string;
   visible: boolean;

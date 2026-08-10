@@ -1,9 +1,7 @@
 import * as THREE from 'three';
-import {
-  isSuppressedSurfaceAnchor,
-  type ObjectSurfaceSnapResult,
-  type SuppressedSurfaceContact,
-  type SurfaceSnapTarget
+import type {
+  ObjectSurfaceSnapResult,
+  SurfaceSnapTarget
 } from './objectSurfaceSnap';
 import {
   minimumSurfaceProjection,
@@ -19,6 +17,7 @@ const MIN_APPROACH_ALIGNMENT = 0.12;
 const MAX_CAPTURE_DISTANCE = 0.12;
 const MAX_TANGENTIAL_TOLERANCE = 0.16;
 const THIN_DIMENSION = 0.0001;
+const AT_SURFACE_DISTANCE = 0.001;
 
 interface SweepCandidate {
   position: [number, number, number];
@@ -34,8 +33,6 @@ interface SweepCandidate {
 
 export interface SweptSurfaceTargetSnapOptions {
   ignoredTargetAnchorId?: string | null;
-  /** Nach einer Durchdrück-Freigabe unterdrückte Kontaktfläche. */
-  suppressedContact?: SuppressedSurfaceContact | null;
 }
 
 interface ContactNormals {
@@ -221,9 +218,6 @@ export function findSweptSurfaceTargetSnap(
           options.ignoredTargetAnchorId
           && targetAnchor.id === options.ignoredTargetAnchorId
         ) continue;
-        if (isSuppressedSurfaceAnchor(target.id, targetAnchor.normal, options.suppressedContact)) {
-          continue;
-        }
 
         const normals = contactNormals(
           currentAnchor,
@@ -250,6 +244,13 @@ export function findSweptSurfaceTargetSnap(
         if (separationChange >= -EPSILON) continue;
         if (previousSeparation < -captureDistance - EPSILON) continue;
         if (currentSeparation > captureDistance + EPSILON) continue;
+        // Kein erneutes Festklemmen hinter der Fläche: Lag die Quelle bereits
+        // auf der Fläche (akzeptierter Kontakt), rastet sie nur innerhalb des
+        // Fangbands wieder ein; dahinter bleibt der Weg in den Körper frei.
+        if (
+          previousSeparation <= AT_SURFACE_DISTANCE
+          && currentSeparation < -captureDistance - EPSILON
+        ) continue;
 
         const approachAlongTargetNormal = direction.dot(normals.target);
         if (approachAlongTargetNormal >= -MIN_APPROACH_ALIGNMENT) continue;
