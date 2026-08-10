@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import type { SceneObjectData } from '../../types/editor';
+import { useEditorStore } from '../../store/editorStore';
 import { APPLE_CUTTER_CELL_SIZE } from '../appleCutter/appleCutterAxisGrid';
 import {
   buildGeometrySurfaceSnapAnchors,
@@ -25,6 +26,7 @@ const fragmentShader = `
   uniform vec3 uBoundsMax;
   uniform vec3 uObjectScale;
   uniform float uCellSize;
+  uniform float uGridOffset;
   uniform float uOpacity;
 
   varying vec3 vLocalPosition;
@@ -45,15 +47,14 @@ const fragmentShader = `
     float safeCellSize = max(uCellSize, 0.0001);
     vec3 center = (uBoundsMin + uBoundsMax) * 0.5;
 
-    // Schnitte liegen zentriert bei ±0,5, ±1,5, ±2,5 ... Kachellängen.
     vec3 centeredCoordinates = ((vLocalPosition - center) * uObjectScale) / safeCellSize;
     vec3 edgeCoordinates = ((vLocalPosition - uBoundsMin) * uObjectScale) / safeCellSize;
     vec3 extents = ((uBoundsMax - uBoundsMin) * uObjectScale) / safeCellSize;
     vec3 axisLines = max(
       vec3(
-        gridLine(centeredCoordinates.x - 0.5),
-        gridLine(centeredCoordinates.y - 0.5),
-        gridLine(centeredCoordinates.z - 0.5)
+        gridLine(centeredCoordinates.x - uGridOffset),
+        gridLine(centeredCoordinates.y - uGridOffset),
+        gridLine(centeredCoordinates.z - uGridOffset)
       ),
       vec3(
         edgeLine(edgeCoordinates.x, extents.x),
@@ -88,6 +89,8 @@ interface PrimitiveSnapPatternProps {
 
 export function PrimitiveSnapPattern({ geometry, object, cellSize, highlighted }: PrimitiveSnapPatternProps) {
   void cellSize;
+  const tool = useEditorStore((state) => state.tool);
+  const translating = tool === 'translate';
   const scaleX = object.scale[0];
   const scaleY = object.scale[1];
   const scaleZ = object.scale[2];
@@ -116,6 +119,13 @@ export function PrimitiveSnapPattern({ geometry, object, cellSize, highlighted }
 
   useEffect(() => () => pointsGeometry.dispose(), [pointsGeometry]);
 
+  // Translation rastet durch die Deckung von Quell- und Zielankern auch auf
+  // den halben Apfelschneider-Schritten ein. Die Visualisierung zeigt deshalb
+  // beim Verschieben dieses 0,125-Raster, ohne die Snap-Topologie zu verändern.
+  const visualCellSize = translating
+    ? APPLE_CUTTER_CELL_SIZE * 0.5
+    : APPLE_CUTTER_CELL_SIZE;
+  const visualGridOffset = translating ? 0 : 0.5;
   const uniforms = useMemo(() => ({
     uColor: { value: new THREE.Color('#EFFF00') },
     uBoundsMin: { value: bounds.min.clone() },
@@ -127,9 +137,10 @@ export function PrimitiveSnapPattern({ geometry, object, cellSize, highlighted }
         Math.max(0.0001, Math.abs(scaleZ))
       )
     },
-    uCellSize: { value: APPLE_CUTTER_CELL_SIZE },
+    uCellSize: { value: visualCellSize },
+    uGridOffset: { value: visualGridOffset },
     uOpacity: { value: highlighted ? 0.46 : 0.16 }
-  }), [bounds, highlighted, scaleX, scaleY, scaleZ]);
+  }), [bounds, highlighted, scaleX, scaleY, scaleZ, visualCellSize, visualGridOffset]);
   const pointSize = Math.min(0.075, Math.max(0.025, APPLE_CUTTER_CELL_SIZE * 0.12));
 
   return (
@@ -153,18 +164,20 @@ export function PrimitiveSnapPattern({ geometry, object, cellSize, highlighted }
           polygonOffsetUnits={-2}
         />
       </mesh>
-      <points geometry={pointsGeometry} renderOrder={901} raycast={() => undefined}>
-        <pointsMaterial
-          color="#EFFF00"
-          size={highlighted ? pointSize * 1.35 : pointSize}
-          sizeAttenuation
-          transparent
-          opacity={highlighted ? 0.96 : 0.62}
-          depthTest
-          depthWrite={false}
-          toneMapped={false}
-        />
-      </points>
+      {!translating && (
+        <points geometry={pointsGeometry} renderOrder={901} raycast={() => undefined}>
+          <pointsMaterial
+            color="#EFFF00"
+            size={highlighted ? pointSize * 1.35 : pointSize}
+            sizeAttenuation
+            transparent
+            opacity={highlighted ? 0.96 : 0.62}
+            depthTest
+            depthWrite={false}
+            toneMapped={false}
+          />
+        </points>
+      )}
     </group>
   );
 }
