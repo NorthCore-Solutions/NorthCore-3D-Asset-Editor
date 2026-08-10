@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
-import { mergeGroups } from 'three/addons/utils/BufferGeometryUtils.js';
 import { ADDITION, Brush, Evaluator } from 'three-bvh-csg';
 import { createGeometry, triangleCount } from '../geometry/factory';
 import type { PrimitiveType, SceneObjectData } from '../types/editor';
@@ -176,18 +175,17 @@ function effectiveDrawRange(geometry: THREE.BufferGeometry): { start: number; co
   return { start, count: Math.max(0, Math.min(total - start, requestedCount)) };
 }
 
-function extractGeometryGroups(source: THREE.BufferGeometry, materialIndex: number | null): THREE.BufferGeometry | null {
+function normalizeUnionGeometry(source: THREE.BufferGeometry): THREE.BufferGeometry | null {
   const drawRange = effectiveDrawRange(source);
   const drawEnd = drawRange.start + drawRange.count;
   const sourceGroups = source.groups.length > 0
     ? source.groups
     : [{ start: drawRange.start, count: drawRange.count, materialIndex: 0 }];
   const selectedGroups = sourceGroups
-    .filter((group) => materialIndex === null || group.materialIndex === materialIndex)
     .map((group) => {
       const start = Math.max(group.start, drawRange.start);
       const end = Math.min(group.start + group.count, drawEnd);
-      return { start, count: Math.max(0, end - start), materialIndex: 0 };
+      return { start, count: Math.max(0, end - start), materialIndex: group.materialIndex ?? 0 };
     })
     .filter((group) => group.count > 0);
 
@@ -195,9 +193,7 @@ function extractGeometryGroups(source: THREE.BufferGeometry, materialIndex: numb
 
   const geometry = source.clone();
   geometry.clearGroups();
-  selectedGroups.forEach((group) => geometry.addGroup(group.start, group.count, 0));
-  mergeGroups(geometry);
-  geometry.clearGroups();
+  selectedGroups.forEach((group) => geometry.addGroup(group.start, group.count, group.materialIndex));
   const count = geometry.index?.count ?? geometry.getAttribute('position').count;
   geometry.setDrawRange(0, count);
   geometry.computeVertexNormals();
@@ -206,28 +202,80 @@ function extractGeometryGroups(source: THREE.BufferGeometry, materialIndex: numb
   return geometry;
 }
 
+const unionMaterials = (result: Brush): THREE.Material[] => (
+  Array.isArray(result.material) ? result.material : [result.material]
+);
+
 function addUnionResult(group: THREE.Group, result: Brush, resources: ExportResources): void {
-  const materials = Array.isArray(result.material) ? result.material : [result.material];
+  const materials = unionMaterials(result);
   materials.forEach((material) => resources.materials.add(material));
 
-  if (materials.length === 1) {
-    const geometry = extractGeometryGroups(result.geometry, null);
-    if (!geometry) throw new Error('Die Union hat keine exportierbare Geometrie erzeugt.');
-    resources.geometries.add(geometry);
-    const mesh = new THREE.Mesh(geometry, materials[0]);
-    mesh.name = 'Union';
-    group.add(mesh);
-    return;
+  const geometry = normalizeUnionGeometry(result.geometry);
+  if (!geometry) throw new Error('Die Union hat keine exportierbare Geometrie erzeugt.');
+  resources.geometries.add(geometry);
+
+  // Genau ein Mesh für das gesamte Union-Ergebnis. Unterschiedliche Materialien
+  // bleiben als Gruppen innerhalb derselben Geometrie erhalten.
+  const mesh = new THREE.Mesh(geometry, materials.length === 1 ? materials[0] : materials);
+  mesh.name = 'Union';
+  group.add(mesh);
+}
+
+function evaluateUnionBrushes(
+  unionObjects: SceneObjectData[],
+  paintTextures: Map<string, THREE.Texture>,
+  resources?: ExportResources
+): Brush {
+  const evaluator = new Evaluator();
+  evaluator.attributes = ['position', 'normal'];
+  evaluator.useGroups = true;
+
+  let result: Brush | null = null;
+
+  for (const object of unionObjects) {
+    const geometry = createWorldGeometry(object, true);
+    const material = createMaterial(object, paintTextures);
+    const brush = new Brush(geometry, material);
+    brush.name = object.name;
+    brush.updateMatrixWorld(true);
+    resources?.geometries.add(geometry);
+    resources?.materials.add(material);
+
+    if (!result) {
+      result = brush;
+      continue;
+    }
+
+    const nextResult: Brush = evaluator.evaluate(result, brush, ADDITION);
+    nextResult.updateMatrixWorld(true);
+    if (resources) {
+      resources.geometries.add(nextResult.geometry);
+      unionMaterials(nextResult).forEach((resultMaterial) => resources.materials.add(resultMaterial));
+    }
+    result = nextResult;
   }
 
-  for (let materialIndex = 0; materialIndex < materials.length; materialIndex += 1) {
-    const geometry = extractGeometryGroups(result.geometry, materialIndex);
-    if (!geometry) continue;
-    resources.geometries.add(geometry);
-    const mesh = new THREE.Mesh(geometry, materials[materialIndex]);
-    mesh.name = `Union Material ${materialIndex + 1}`;
-    group.add(mesh);
+  if (!result) throw new Error('Es konnten keine Grundformen für die Union vorbereitet werden.');
+  return result;
+}
+
+// Erzeugt das vereinigte Mesh der union-fähigen Objekte. Die Welttransformation
+// der Quellobjekte ist in der Geometrie gebacken, das Mesh selbst steht damit
+// auf einer sauberen lokalen Identitätstransformation.
+export function computeUnionMesh(objects: SceneObjectData[]): THREE.Mesh {
+  const unionObjects = objects.filter(isUnionEligible);
+  if (unionObjects.length < 2) {
+    throw new Error('Union benötigt mindestens zwei geschlossene, unbemalte Grundformen.');
   }
+
+  const result = evaluateUnionBrushes(unionObjects, new Map());
+  const materials = unionMaterials(result);
+  const geometry = normalizeUnionGeometry(result.geometry);
+  if (!geometry) throw new Error('Die Union hat keine exportierbare Geometrie erzeugt.');
+
+  const mesh = new THREE.Mesh(geometry, materials.length === 1 ? materials[0] : materials);
+  mesh.name = 'Union';
+  return mesh;
 }
 
 function addUnionMeshes(
@@ -244,37 +292,7 @@ function addUnionMeshes(
     return;
   }
 
-  const evaluator = new Evaluator();
-  evaluator.attributes = ['position', 'normal'];
-  evaluator.useGroups = true;
-
-  let result: Brush | null = null;
-
-  for (const object of unionObjects) {
-    const geometry = createWorldGeometry(object, true);
-    const material = createMaterial(object, paintTextures);
-    const brush = new Brush(geometry, material);
-    brush.name = object.name;
-    brush.updateMatrixWorld(true);
-    resources.geometries.add(geometry);
-    resources.materials.add(material);
-
-    if (!result) {
-      result = brush;
-      continue;
-    }
-
-    const nextResult: Brush = evaluator.evaluate(result, brush, ADDITION);
-    nextResult.updateMatrixWorld(true);
-    resources.geometries.add(nextResult.geometry);
-    const resultMaterials: THREE.Material[] = Array.isArray(nextResult.material)
-      ? nextResult.material
-      : [nextResult.material];
-    resultMaterials.forEach((resultMaterial) => resources.materials.add(resultMaterial));
-    result = nextResult;
-  }
-
-  if (!result) throw new Error('Es konnten keine Grundformen für die Union vorbereitet werden.');
+  const result = evaluateUnionBrushes(unionObjects, paintTextures, resources);
   addUnionResult(group, result, resources);
   separateObjects.forEach((object) => addSeparateMesh(group, object, resources, paintTextures));
 }
