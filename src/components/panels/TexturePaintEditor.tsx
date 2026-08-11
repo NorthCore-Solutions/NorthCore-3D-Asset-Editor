@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import type { CameraView, PaintTextureData } from '../../types/editor';
+import type { PaintTextureData } from '../../types/editor';
 import {
   atlasIslandAtPixel,
   atlasPixelRegion,
@@ -9,7 +9,6 @@ import {
   cloneSurfaceCanvas,
   composeSurfaceAtlasCanvas,
   copySurfaceCanvas,
-  createPaintTextureData,
   createVisibleSurfaceCanvas,
   loadSurfaceCanvases,
   PAINT_BASE_ALPHA,
@@ -33,6 +32,9 @@ import {
   setSurfacePaintSettings,
   subscribeSurfacePaint
 } from '../../editor/paint/surfacePaintSession';
+import { createPaintDocument, paintTextureNeedsMigration } from '../../editor/paint/paintDocument';
+import { linePoints } from '../../editor/paint/paintStroke';
+import { cameraViewForSurfaceLabel } from '../../editor/paint/surfaceCamera';
 import './texture-paint-editor.css';
 
 interface TexturePaintEditorProps {
@@ -64,17 +66,6 @@ function surfaceDisplayLabel(index: number, label: string): string {
   return /^Fläche\s+\d+$/i.test(label) ? numberedLabel : `${numberedLabel} · ${label}`;
 }
 
-function cameraViewForSurface(label: string): CameraView | null {
-  const direction = label.replace(/\s+\d+$/u, '');
-  if (direction === 'Vorne') return 'front';
-  if (direction === 'Hinten') return 'back';
-  if (direction === 'Links') return 'left';
-  if (direction === 'Rechts') return 'right';
-  if (direction === 'Oben') return 'top';
-  if (direction === 'Unten') return 'bottom';
-  return null;
-}
-
 function closeSurfacePicker(button: HTMLButtonElement): void {
   button.closest('details')?.removeAttribute('open');
 }
@@ -93,27 +84,6 @@ function pointerInsideCanvas(canvas: HTMLCanvasElement, clientX: number, clientY
     && clientX <= bounds.right
     && clientY >= bounds.top
     && clientY <= bounds.bottom;
-}
-
-function linePoints(from: [number, number], to: [number, number]): Array<[number, number]> {
-  const points: Array<[number, number]> = [];
-  let [x0, y0] = from;
-  const [x1, y1] = to;
-  const dx = Math.abs(x1 - x0);
-  const sx = x0 < x1 ? 1 : -1;
-  const dy = -Math.abs(y1 - y0);
-  const sy = y0 < y1 ? 1 : -1;
-  let error = dx + dy;
-
-  for (;;) {
-    points.push([x0, y0]);
-    if (x0 === x1 && y0 === y1) break;
-    const doubled = error * 2;
-    if (doubled >= dy) { error += dy; x0 += sx; }
-    if (doubled <= dx) { error += dx; y0 += sy; }
-  }
-
-  return points;
 }
 
 function snapshotLayers(layers: HTMLCanvasElement[]): LayerSnapshot {
@@ -195,16 +165,7 @@ export function TexturePaintEditor({
 
   const commitLayers = (): void => {
     if (layersRef.current.length === 0) return;
-    const created = createPaintTextureData(layersRef.current, atlas, metrics, baseColor);
-    const data: PaintTextureData = created.surfaceGrid
-      ? {
-          ...created,
-          surfaceGrid: {
-            ...created.surfaceGrid,
-            baseColor: baseColor.toUpperCase()
-          }
-        }
-      : created;
+    const data = createPaintDocument(layersRef.current, atlas, metrics, baseColor);
     loadedKeyRef.current = `${objectId}:${data.dataUrl}:${atlas.signature}:${dimensionsKey}`;
     onCommit(data);
   };
@@ -272,7 +233,7 @@ export function TexturePaintEditor({
     setSurfacePaintSettings({ islandIndex: clamped });
 
     if (clamped >= 0) {
-      const view = cameraViewForSurface(atlas.islands[clamped]?.label ?? '');
+      const view = cameraViewForSurfaceLabel(atlas.islands[clamped]?.label ?? '');
       if (view) requestSurfaceCameraView(view);
     }
   };
@@ -304,28 +265,7 @@ export function TexturePaintEditor({
         setHistoryLength(historyRef.current.length);
         setFutureLength(futureRef.current.length);
 
-        const storedGrid = texture?.surfaceGrid;
-        const needsMigration = Boolean(texture) && (
-          !storedGrid
-          || storedGrid.version !== 2
-          || storedGrid.atlasSignature !== atlas.signature
-          || storedGrid.baseColor?.toUpperCase() !== baseColor.toUpperCase()
-          || !storedGrid.sourceDataUrl
-          || !storedGrid.sourceWidth
-          || !storedGrid.sourceHeight
-          || storedGrid.surfaces.length !== metrics.length
-          || storedGrid.surfaces.some((stored, index) => {
-            const metric = metrics[index];
-            return !metric
-              || !stored.sourceWidth
-              || !stored.sourceHeight
-              || stored.width !== metric.width
-              || stored.height !== metric.height
-              || Math.abs(stored.coverageU - metric.coverageU) > 0.000001
-              || Math.abs(stored.coverageV - metric.coverageV) > 0.000001;
-          })
-        );
-        if (needsMigration) commitLayers();
+        if (paintTextureNeedsMigration(texture, atlas, metrics, baseColor)) commitLayers();
       })
       .catch(() => undefined);
   }, [atlas.signature, baseColor, dimensionsKey, objectId, texture?.dataUrl, texture?.height, texture?.width]);
