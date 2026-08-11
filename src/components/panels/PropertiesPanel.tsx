@@ -7,12 +7,10 @@ import {
   supportsGeometryRounding
 } from '../../geometry/rounding';
 import { FULL_SURFACE_UV_ATLAS, getSurfaceUvAtlas } from '../../geometry/uvAtlas';
-import {
-  createPaintTextureData,
-  getSurfaceRasterMetrics,
-  loadSurfaceCanvases
-} from '../../editor/paint/surfacePaintGrid';
+import { getSurfaceRasterMetrics } from '../../editor/paint/surfacePaintGrid';
 import { setSurfacePaintSettings, subscribeSurfacePaint } from '../../editor/paint/surfacePaintSession';
+import { recolorPaintTexture } from '../../editor/paint/recolorPaintTexture';
+import { withPaintBaseColor } from '../../editor/paint/paintDocument';
 import { useEditorStore } from '../../store/editorStore';
 import type { MaterialData, PaintTextureData, Vec3 } from '../../types/editor';
 import { StandardColorPicker } from './StandardColorPicker';
@@ -187,8 +185,7 @@ export function PropertiesPanel({ collapsed, onToggle }: PropertiesPanelProps) {
     }
 
     const { atlas, metrics } = paintSurface;
-    void loadSurfaceCanvases(paintTexture, atlas, metrics, normalized)
-      .then((layers) => createPaintTextureData(layers, atlas, metrics, normalized))
+    void recolorPaintTexture(paintTexture, atlas, metrics, normalized)
       .then((updatedTexture) => {
         const currentObject = useEditorStore.getState().objects.find((item) => item.id === object.id);
         const currentDataUrl = currentObject?.material.paintTexture?.dataUrl;
@@ -209,16 +206,7 @@ export function PropertiesPanel({ collapsed, onToggle }: PropertiesPanelProps) {
 
   const commitPaintTexture = (paintTexture: PaintTextureData | undefined): void => {
     recolorRequestRef.current += 1;
-    const normalizedTexture = paintTexture?.surfaceGrid
-      ? {
-          ...paintTexture,
-          surfaceGrid: {
-            ...paintTexture.surfaceGrid,
-            baseColor: object.material.color.toUpperCase()
-          }
-        }
-      : paintTexture;
-    setMaterial({ paintTexture: normalizedTexture });
+    setMaterial({ paintTexture: withPaintBaseColor(paintTexture, object.material.color) });
   };
 
   return (
