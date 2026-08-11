@@ -67,6 +67,15 @@
 }
 
 @media (max-width: 1180px), (pointer: coarse) and (max-width: 1400px) {
+  .viewport-help {
+    top: 10px;
+    bottom: auto;
+    flex-direction: column-reverse;
+    transition:
+      left 160ms ease-out,
+      top 160ms ease-out;
+  }
+
   .viewport-help-button {
     width: 36px;
     height: 36px;
@@ -78,7 +87,16 @@
   }
 
   .workspace.hierarchy-collapsed .viewport-help {
-    bottom: 54px;
+    bottom: auto;
+  }
+
+  .viewport-help-popover {
+    white-space: normal;
+    max-width: min(460px, calc(100vw - var(--inventory-panel-width) - 30px));
+  }
+
+  .workspace.inventory-collapsed .viewport-help-popover {
+    max-width: min(460px, calc(100vw - 84px));
   }
 }
 

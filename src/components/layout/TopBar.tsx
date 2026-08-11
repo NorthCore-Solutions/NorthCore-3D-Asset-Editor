@@ -202,7 +202,7 @@ export function TopBar() {
           </div>
         </details>
         <input className="project-name" aria-label="Projektname" value={project.name} onChange={(event) => setProjectName(event.target.value)} />
-        <div className="brand">NorthCore Asset Editor {EDITOR_VERSION}</div>
+        <div className="brand">NorthCore 3D Asset Editor {EDITOR_VERSION}</div>
         <input
           ref={inputRef}
           type="file"
