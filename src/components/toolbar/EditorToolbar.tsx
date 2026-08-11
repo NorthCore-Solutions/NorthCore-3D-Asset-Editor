@@ -47,6 +47,11 @@ export function EditorToolbar() {
     return () => document.removeEventListener('pointerdown', closeOnOutsidePointer, true);
   }, [viewMenuOpen]);
 
+  useEffect(() => {
+    if (Math.abs(snap.scale - snap.position) <= 0.000001) return;
+    setSnap({ scale: snap.position });
+  }, [setSnap, snap.position, snap.scale]);
+
   const selectTool = (mode: TransformMode): void => {
     setSurfacePaintSettings({ enabled: false, cameraView: null });
     setTool(mode);
@@ -110,9 +115,11 @@ export function EditorToolbar() {
         <label><input type="checkbox" checked={snap.enabled} onChange={(event) => setSnap({ enabled: event.target.checked })} /> Snapping</label>
         <label className="disabled" title="Grundformen an den Fangflächen anderer Grundformen einrasten (vorerst deaktiviert)"><input type="checkbox" checked={snap.surface} disabled onChange={(event) => setSnap({ surface: event.target.checked })} /> Formen-Snap</label>
         <label title="Länge, Höhe und Tiefe aller sichtbaren Formen anzeigen"><input type="checkbox" checked={dimensionsVisible} onChange={(event) => setDimensionOverlayVisible(event.target.checked)} /> Maße</label>
-        <label>Pos. <input type="number" min="0.01" step="0.05" value={snap.position} onChange={(event) => setSnap({ position: Number(event.target.value) })} /></label>
+        <label>Pos./Skala <input type="number" min="0.01" step="0.05" value={snap.position} onChange={(event) => {
+          const value = Number(event.target.value);
+          setSnap({ position: value, scale: value });
+        }} /></label>
         <label>Grad <input type="number" min="1" step="1" value={snap.rotation} onChange={(event) => setSnap({ rotation: Number(event.target.value) })} /></label>
-        <label>Skala <input type="number" min="0.01" step="0.05" value={snap.scale} onChange={(event) => setSnap({ scale: Number(event.target.value) })} /></label>
       </div>
     </div>
   );
