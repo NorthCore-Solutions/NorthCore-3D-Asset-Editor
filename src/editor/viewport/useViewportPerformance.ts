@@ -6,8 +6,6 @@ import type { SceneObjectData } from '../../types/editor';
 const BASE_ZOOM_SPEED = 1.25;
 const MAX_ZOOM_SPEED = 3.75;
 const MAX_VIEWPORT_PIXEL_RATIO = 1.5;
-const INTERACTION_PIXEL_RATIO = 1;
-const RESOLUTION_RESTORE_DELAY_MS = 140;
 
 interface OrbitControlApi {
   target: THREE.Vector3;
@@ -16,15 +14,12 @@ interface OrbitControlApi {
   minDistance: number;
   maxDistance: number;
   dampingFactor: number;
-  addEventListener: (type: 'start' | 'end', listener: () => void) => void;
-  removeEventListener: (type: 'start' | 'end', listener: () => void) => void;
 }
 
 interface ViewportPerformanceEntry {
   references: number;
   gl: THREE.WebGLRenderer;
   controls: OrbitControlApi;
-  restoreTimer: number | null;
   previousPixelRatio: number;
   previousShadowAutoUpdate: boolean;
   previousZoomSpeed: number;
@@ -32,8 +27,6 @@ interface ViewportPerformanceEntry {
   previousMinDistance: number;
   previousMaxDistance: number;
   previousDampingFactor: number;
-  startInteraction: () => void;
-  endInteraction: () => void;
   handleWheel: () => void;
 }
 
@@ -119,40 +112,14 @@ export function useViewportPerformance(
       const previousMaxDistance = controls.maxDistance;
       const previousDampingFactor = controls.dampingFactor;
 
-      const restoreResolution = (): void => {
-        const current = viewportPerformanceEntries.get(scene);
-        if (!current) return;
-        current.restoreTimer = null;
-        setPixelRatio(gl, preferredPixelRatio());
-      };
-
-      const startInteraction = (): void => {
-        const current = viewportPerformanceEntries.get(scene);
-        if (!current) return;
-        if (current.restoreTimer !== null) {
-          window.clearTimeout(current.restoreTimer);
-          current.restoreTimer = null;
-        }
-        setPixelRatio(gl, INTERACTION_PIXEL_RATIO);
-      };
-
-      const endInteraction = (): void => {
-        const current = viewportPerformanceEntries.get(scene);
-        if (!current) return;
-        if (current.restoreTimer !== null) window.clearTimeout(current.restoreTimer);
-        current.restoreTimer = window.setTimeout(restoreResolution, RESOLUTION_RESTORE_DELAY_MS);
-      };
-
       const handleWheel = (): void => {
         setControlZoomSpeed(controls, zoomSpeedForDistance(camera.position.distanceTo(controls.target)));
-        startInteraction();
       };
 
       entry = {
         references: 0,
         gl,
         controls,
-        restoreTimer: null,
         previousPixelRatio,
         previousShadowAutoUpdate,
         previousZoomSpeed,
@@ -160,17 +127,16 @@ export function useViewportPerformance(
         previousMinDistance,
         previousMaxDistance,
         previousDampingFactor,
-        startInteraction,
-        endInteraction,
         handleWheel
       };
       viewportPerformanceEntries.set(scene, entry);
 
       configureControls(controls, zoomSpeedForDistance(camera.position.distanceTo(controls.target)));
-      controls.addEventListener('start', startInteraction);
-      controls.addEventListener('end', endInteraction);
       gl.domElement.addEventListener('wheel', handleWheel, { capture: true, passive: true });
 
+      // Das Pixel Ratio bleibt während der gesamten Interaktion konstant:
+      // Eine Interaktions-Herabsetzung skaliert den Drawing-Buffer um und
+      // ließ Raster- und Achsenlinien bei jedem Klick/Tipp kurz aufhellen.
       setPixelRatio(gl, preferredPixelRatio());
       configureShadowMap(gl, false);
     }
@@ -183,9 +149,6 @@ export function useViewportPerformance(
       current.references -= 1;
       if (current.references > 0) return;
 
-      if (current.restoreTimer !== null) window.clearTimeout(current.restoreTimer);
-      current.controls.removeEventListener('start', current.startInteraction);
-      current.controls.removeEventListener('end', current.endInteraction);
       current.gl.domElement.removeEventListener('wheel', current.handleWheel, true);
       restoreControls(current);
       configureShadowMap(current.gl, current.previousShadowAutoUpdate);
