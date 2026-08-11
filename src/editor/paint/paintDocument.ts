@@ -2,22 +2,30 @@ import type { PaintTextureData } from '../../types/editor';
 import type { SurfaceUvAtlas } from '../../geometry/uvAtlas';
 import { createPaintTextureData, type SurfaceRasterMetric } from './surfacePaintGrid';
 
+export function withPaintBaseColor(
+  texture: PaintTextureData | undefined,
+  baseColor: string
+): PaintTextureData | undefined {
+  if (!texture?.surfaceGrid) return texture;
+  return {
+    ...texture,
+    surfaceGrid: {
+      ...texture.surfaceGrid,
+      baseColor: baseColor.toUpperCase()
+    }
+  };
+}
+
 export function createPaintDocument(
   layers: HTMLCanvasElement[],
   atlas: SurfaceUvAtlas,
   metrics: SurfaceRasterMetric[],
   baseColor: string
 ): PaintTextureData {
-  const created = createPaintTextureData(layers, atlas, metrics, baseColor);
-  return created.surfaceGrid
-    ? {
-        ...created,
-        surfaceGrid: {
-          ...created.surfaceGrid,
-          baseColor: baseColor.toUpperCase()
-        }
-      }
-    : created;
+  return withPaintBaseColor(
+    createPaintTextureData(layers, atlas, metrics, baseColor),
+    baseColor
+  )!;
 }
 
 export function paintTextureNeedsMigration(
