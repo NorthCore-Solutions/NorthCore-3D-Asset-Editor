@@ -107,7 +107,7 @@ export function EditorToolbar() {
         <label><input type="checkbox" checked={scene.axesVisible} onChange={(event) => setScene({ axesVisible: event.target.checked })} /> Achsen</label>
       </div>
       <div className="group">
-        <label><input type="checkbox" checked={snap.enabled} onChange={(event) => setSnap({ enabled: event.target.checked })} /> Snapping</label>
+        <label><input type="checkbox" checked={snap.enabled} onChange={(event) => setSnap({ enabled: event.target.checked, scale: snap.position })} /> Snapping</label>
         <label className="disabled" title="Grundformen an den Fangflächen anderer Grundformen einrasten (vorerst deaktiviert)"><input type="checkbox" checked={snap.surface} disabled onChange={(event) => setSnap({ surface: event.target.checked })} /> Formen-Snap</label>
         <label title="Länge, Höhe und Tiefe aller sichtbaren Formen anzeigen"><input type="checkbox" checked={dimensionsVisible} onChange={(event) => setDimensionOverlayVisible(event.target.checked)} /> Maße</label>
         <label>Pos./Skala <input type="number" min="0.01" step="0.05" value={snap.position} onChange={(event) => {
