@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import type * as THREE from 'three';
 import type { Vec3 } from '../../types/editor';
 import type { AppleCutterScope } from '../appleCutter/appleCutterTypes';
 import type { SurfaceSnapAnchor } from './surfaceSnapTopology';
