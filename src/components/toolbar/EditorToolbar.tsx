@@ -47,11 +47,6 @@ export function EditorToolbar() {
     return () => document.removeEventListener('pointerdown', closeOnOutsidePointer, true);
   }, [viewMenuOpen]);
 
-  useEffect(() => {
-    if (Math.abs(snap.scale - snap.position) <= 0.000001) return;
-    setSnap({ scale: snap.position });
-  }, [setSnap, snap.position, snap.scale]);
-
   const selectTool = (mode: TransformMode): void => {
     setSurfacePaintSettings({ enabled: false, cameraView: null });
     setTool(mode);
