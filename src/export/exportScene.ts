@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { ADDITION, Brush, Evaluator } from 'three-bvh-csg';
+import { isWaterTight } from 'three-bvh-csg/src/utils/isWaterTight.js';
+import { HalfEdgeMap } from 'three-bvh-csg/src/core/HalfEdgeMap.js';
 import { createGeometry, triangleCount } from '../geometry/factory';
 import type { PrimitiveType, SceneObjectData } from '../types/editor';
 import { safeFilename } from '../persistence/projectFile';
@@ -21,18 +23,21 @@ interface ExportResources {
   textures: Set<THREE.Texture>;
 }
 
-const UNION_TYPES = new Set<PrimitiveType>([
-  'box', 'cuboid', 'sphere', 'cylinder', 'cone', 'pyramid', 'torus', 'wedge', 'prism'
-]);
+// Vollständig geprüfte, begründete Typdefinition statt Whitelist: Alle aktuell
+// erzeugbaren Formtypen außer 'plane' liefern über createGeometry() nachweislich
+// geschlossene, wasserdichte Volumenkörper (isWaterTight = true, Volumen > 0;
+// durch tests/unionExport.test.ts für jeden Typ abgesichert). 'plane' ist eine
+// beidseitige Fläche ohne Volumen (Volumen = 0), also kein Solide, und kann
+// nicht an einer booleschen Union teilnehmen.
+const NON_SOLID_TYPES = new Set<PrimitiveType>(['plane']);
 
 export function filterExportObjects(objects: SceneObjectData[], selectedId: string | null, selectionOnly: boolean): SceneObjectData[] {
   return objects.filter((object) => object.visible && (!selectionOnly || object.id === selectedId));
 }
 
 function isUnionEligible(object: SceneObjectData): boolean {
-  return UNION_TYPES.has(object.type)
-    && object.material.opacity > 0
-    && !object.material.paintTexture;
+  return !NON_SOLID_TYPES.has(object.type)
+    && object.material.opacity > 0;
 }
 
 function liesBelowGround(object: SceneObjectData): boolean {
@@ -69,10 +74,10 @@ export function inspectExport(
 
   if (geometryMode === 'union') {
     if (unionEligible < 2) {
-      warnings.push('Union benötigt mindestens zwei geschlossene, unbemalte Grundformen. Der Export bleibt für diese Auswahl getrennt.');
+      warnings.push('Union benötigt mindestens zwei geschlossene Volumenkörper. Der Export bleibt für diese Auswahl getrennt.');
     }
     if (unionSeparate > 0) {
-      warnings.push(`${unionSeparate} bemalte, nicht geschlossene oder nicht unterstützte Objekt${unionSeparate === 1 ? '' : 'e'} werden separat exportiert.`);
+      warnings.push(`${unionSeparate} nicht union-fähige${unionSeparate === 1 ? 's' : ''} Objekt${unionSeparate === 1 ? '' : 'e'} (z. B. Ebene oder vollständig transparent) ${unionSeparate === 1 ? 'wird' : 'werden'} separat exportiert.`);
     }
   }
 
@@ -88,7 +93,14 @@ function loadTexture(dataUrl: string): Promise<THREE.Texture> {
       texture.magFilter = THREE.NearestFilter;
       texture.minFilter = THREE.NearestFilter;
       texture.generateMipmaps = false;
-      texture.flipY = false;
+      // Dieselbe Konvention wie die Paint-Texturen im Editor (flipY = true,
+      // siehe useSurfacePaintGrid): Der Oberflächenatlas legt seine UV-Inseln in
+      // three.js-Konvention an (v = 1 = Bild-Oberkante). Der GLTFExporter
+      // spiegelt Bilder mit flipY = true beim Einbetten in die glTF-Konvention
+      // (v = 0 = Bild-Oberkante) – mit flipY = false bliebe das Bild
+      // ungespiegelt und jede Insel würde den vertikal gespiegelten
+      // Atlasbereich anzeigen (z. B. „Rechts" als „Unten").
+      texture.flipY = true;
       texture.needsUpdate = true;
       resolve(texture);
     };
@@ -138,10 +150,18 @@ function createWorldGeometry(object: SceneObjectData, forUnion: boolean): THREE.
   geometry.applyMatrix4(objectMatrix(object));
 
   if (forUnion) {
+    // Position, Normalen und UVs gehen in die CSG-Pipeline. Die UVs werden vom
+    // Evaluator (attributes: ['position', 'normal', 'uv']) durch die boolesche
+    // Operation interpoliert, damit Bemalungen auf den erhaltenen Oberflächen
+    // korrekt bleiben. Alle übrigen Attribute werden verworfen.
     for (const attributeName of Object.keys(geometry.attributes)) {
-      if (attributeName !== 'position' && attributeName !== 'normal') geometry.deleteAttribute(attributeName);
+      if (attributeName !== 'position' && attributeName !== 'normal' && attributeName !== 'uv') geometry.deleteAttribute(attributeName);
     }
     if (!geometry.getAttribute('normal')) geometry.computeVertexNormals();
+    if (!geometry.getAttribute('uv')) {
+      const vertexCount = geometry.getAttribute('position').count;
+      geometry.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(vertexCount * 2), 2));
+    }
     const count = geometry.index?.count ?? geometry.getAttribute('position').count;
     geometry.clearGroups();
     geometry.addGroup(0, count, 0);
@@ -196,7 +216,9 @@ function normalizeUnionGeometry(source: THREE.BufferGeometry): THREE.BufferGeome
   selectedGroups.forEach((group) => geometry.addGroup(group.start, group.count, group.materialIndex));
   const count = geometry.index?.count ?? geometry.getAttribute('position').count;
   geometry.setDrawRange(0, count);
-  geometry.computeVertexNormals();
+  // Die von der CSG-Operation interpolierten Normalen bleiben erhalten, damit
+  // die Oberflächen wie im Editor schattiert werden.
+  if (!geometry.getAttribute('normal')) geometry.computeVertexNormals();
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
   return geometry;
@@ -221,13 +243,103 @@ function addUnionResult(group: THREE.Group, result: Brush, resources: ExportReso
   group.add(mesh);
 }
 
+// Ein Union-Schritt zweier Brushes. Der Legacy-Splitter liefert für polyedrische
+// Körper die bisher validierte Triangulierung (z. B. exakt aneinanderliegende
+// Würfel) und bleibt deshalb der Standard. An gekrümmten Schnittkurven (Kugel,
+// Halbkugel, Torus, …) kann er jedoch haarfeine Risse hinterlassen; dann
+// trianguliert der CDT-Splitter die Schnittbereiche robust neu. Der CDT-Splitter
+// ist in koplanaren Sonderfällen wiederum von der Operandenreihenfolge abhängig,
+// deshalb wird nötigenfalls auch die getauschte Reihenfolge geprüft. Maßgeblich
+// ist stets das Ergebnis: Akzeptiert wird die erste wasserdichte Geometrie mit
+// intakter UV-Zuordnung; scheitern alle Varianten, gewinnt die mit den wenigsten
+// unverbundenen Kanten.
+function unmatchedEdgeCount(geometry: THREE.BufferGeometry): number {
+  const halfEdges = new HalfEdgeMap();
+  halfEdges.matchDisjointEdges = true;
+  halfEdges.updateFrom(geometry);
+  return halfEdges.unmatchedEdges;
+}
+
+function uvRange(geometry: THREE.BufferGeometry): { min: number; max: number } | null {
+  const uv = geometry.getAttribute('uv');
+  if (!uv) return null;
+  let min = Number.POSITIVE_INFINITY;
+  let max = Number.NEGATIVE_INFINITY;
+  for (let index = 0; index < uv.count; index += 1) {
+    for (let component = 0; component < 2; component += 1) {
+      const value = component === 0 ? uv.getX(index) : uv.getY(index);
+      if (!Number.isFinite(value)) return null;
+      min = Math.min(min, value);
+      max = Math.max(max, value);
+    }
+  }
+  return { min, max };
+}
+
+// Die CSG-Operation darf UVs nur innerhalb der Eingabewerte interpolieren.
+// Ein Kandidat ohne UVs, mit NaN oder mit Werten außerhalb des Eingaberahmens
+// hätte die semantische Fläche-zu-Atlas-Insel-Zuordnung zerstört und wird
+// deshalb nicht akzeptiert, solange eine bessere Variante existiert.
+function hasConsistentUvs(result: Brush, sources: Brush[]): boolean {
+  const resultRange = uvRange(result.geometry);
+  if (!resultRange) return false;
+
+  let min = Number.POSITIVE_INFINITY;
+  let max = Number.NEGATIVE_INFINITY;
+  for (const source of sources) {
+    const range = uvRange(source.geometry);
+    if (!range) continue;
+    min = Math.min(min, range.min);
+    max = Math.max(max, range.max);
+  }
+  if (!Number.isFinite(min)) return false;
+
+  const tolerance = 0.001;
+  return resultRange.min >= min - tolerance && resultRange.max <= max + tolerance;
+}
+
+function evaluateUnionStep(evaluator: Evaluator, a: Brush, b: Brush): Brush {
+  const candidates: Brush[] = [];
+  const accept = (candidate: Brush): Brush => {
+    candidates.forEach((rejected) => rejected.geometry.dispose());
+    candidates.length = 0;
+    return candidate;
+  };
+
+  const legacyResult: Brush = evaluator.evaluate(a, b, ADDITION);
+  legacyResult.updateMatrixWorld(true);
+  if (isWaterTight(legacyResult.geometry) && hasConsistentUvs(legacyResult, [a, b])) return legacyResult;
+  candidates.push(legacyResult);
+
+  evaluator.useCDTClipping = true;
+  try {
+    for (const [first, second] of [[a, b], [b, a]] as const) {
+      const cdtResult: Brush = evaluator.evaluate(first, second, ADDITION);
+      cdtResult.updateMatrixWorld(true);
+      if (isWaterTight(cdtResult.geometry) && hasConsistentUvs(cdtResult, [a, b])) return accept(cdtResult);
+      candidates.push(cdtResult);
+    }
+  } finally {
+    evaluator.useCDTClipping = false;
+  }
+
+  // Kein Kandidat ist wasserdicht mit intakten UVs: erst Wasserdichtigkeit
+  // (wenigste unverbundene Kanten), bei Gleichstand UV-Konsistenz berücksichtigen.
+  candidates.sort((left, right) => {
+    const edgeDifference = unmatchedEdgeCount(left.geometry) - unmatchedEdgeCount(right.geometry);
+    if (edgeDifference !== 0) return edgeDifference;
+    return Number(hasConsistentUvs(right, [a, b])) - Number(hasConsistentUvs(left, [a, b]));
+  });
+  return accept(candidates[0]!);
+}
+
 function evaluateUnionBrushes(
   unionObjects: SceneObjectData[],
   paintTextures: Map<string, THREE.Texture>,
   resources?: ExportResources
 ): Brush {
   const evaluator = new Evaluator();
-  evaluator.attributes = ['position', 'normal'];
+  evaluator.attributes = ['position', 'normal', 'uv'];
   evaluator.useGroups = true;
 
   let result: Brush | null = null;
@@ -246,8 +358,7 @@ function evaluateUnionBrushes(
       continue;
     }
 
-    const nextResult: Brush = evaluator.evaluate(result, brush, ADDITION);
-    nextResult.updateMatrixWorld(true);
+    const nextResult = evaluateUnionStep(evaluator, result, brush);
     if (resources) {
       resources.geometries.add(nextResult.geometry);
       unionMaterials(nextResult).forEach((resultMaterial) => resources.materials.add(resultMaterial));
@@ -255,20 +366,20 @@ function evaluateUnionBrushes(
     result = nextResult;
   }
 
-  if (!result) throw new Error('Es konnten keine Grundformen für die Union vorbereitet werden.');
+  if (!result) throw new Error('Es konnten keine Volumenkörper für die Union vorbereitet werden.');
   return result;
 }
 
 // Erzeugt das vereinigte Mesh der union-fähigen Objekte. Die Welttransformation
 // der Quellobjekte ist in der Geometrie gebacken, das Mesh selbst steht damit
 // auf einer sauberen lokalen Identitätstransformation.
-export function computeUnionMesh(objects: SceneObjectData[]): THREE.Mesh {
+export function computeUnionMesh(objects: SceneObjectData[], paintTextures: Map<string, THREE.Texture> = new Map()): THREE.Mesh {
   const unionObjects = objects.filter(isUnionEligible);
   if (unionObjects.length < 2) {
-    throw new Error('Union benötigt mindestens zwei geschlossene, unbemalte Grundformen.');
+    throw new Error('Union benötigt mindestens zwei geschlossene Volumenkörper.');
   }
 
-  const result = evaluateUnionBrushes(unionObjects, new Map());
+  const result = evaluateUnionBrushes(unionObjects, paintTextures);
   const materials = unionMaterials(result);
   const geometry = normalizeUnionGeometry(result.geometry);
   if (!geometry) throw new Error('Die Union hat keine exportierbare Geometrie erzeugt.');

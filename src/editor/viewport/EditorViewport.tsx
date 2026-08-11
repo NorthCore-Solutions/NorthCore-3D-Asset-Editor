@@ -129,6 +129,7 @@ SCALE_ARROW_TIP_GEOMETRY.translate(0, 0.05, 0);
 const SCALE_ARROW_PICKER_GEOMETRY = new THREE.CylinderGeometry(0.2, 0, 0.6, 4);
 const scaleHandleEye = new THREE.Vector3();
 const scaleHandleAxis = new THREE.Vector3();
+const scaleHandleCenter = new THREE.Vector3();
 const scaleHandleQuaternion = new THREE.Quaternion();
 const CORNERS: CornerSides[] = [
   [-1, -1, -1], [-1, -1, 1], [-1, 1, -1], [-1, 1, 1],
@@ -393,10 +394,16 @@ function ScaleHandle({ mesh, bounds, axis, side, color, onPointerDown }: {
     // Drehen der Kamera wechselt er auf die gegenüberliegende Seite. Die Regel
     // zum Ausblenden bei nahezu axialem Kamerablick (analog zu den
     // Verschiebe-Pfeilen) bleibt erhalten. Die Objektrotation fließt über das
-    // Welt-Quaternion in die Achsrichtung ein.
+    // Welt-Quaternion in die Achsrichtung ein. Die Blickrichtung wird wie bei
+    // den TransformControls vom Objektzentrum aus bestimmt, nicht vom
+    // Pfeilansatz am Objektrand — sonst dotten bei den festen Kameraansichten
+    // beide Seiten einer bildebenen Achse leicht negativ und beide Pfeile
+    // verschwinden.
     mesh.getWorldQuaternion(scaleHandleQuaternion);
     scaleHandleAxis.copy(axisVector(axis, side)).applyQuaternion(scaleHandleQuaternion);
-    cameraEyeVector(camera, handle.position, scaleHandleEye);
+    bounds.getCenter(scaleHandleCenter);
+    mesh.localToWorld(scaleHandleCenter);
+    cameraEyeVector(camera, scaleHandleCenter, scaleHandleEye);
     handle.visible = isScaleAxisHandleVisible(scaleHandleAxis, scaleHandleEye);
   });
 

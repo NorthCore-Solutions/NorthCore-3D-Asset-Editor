@@ -157,6 +157,13 @@
   outline-offset: 1px;
 }
 
+.hierarchy-actions .panel-collapse-button {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font-size: 18px;
+}
+
 .panel.panel-collapsed {
   overflow: hidden;
 }

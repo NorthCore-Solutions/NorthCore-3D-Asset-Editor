@@ -50,19 +50,19 @@ export function ExportDialog({ onClose }: { onClose: () => void }) {
             <label>Aktion</label>
             <select value={geometryMode} onChange={(event) => setGeometryMode(event.target.value as ExportGeometryMode)}>
               <option value="separate">Getrennte Meshes exportieren</option>
-              <option value="union">Grundformen als Union exportieren</option>
+              <option value="union">Volumenkörper als Union exportieren</option>
             </select>
           </div>
           <div className="export-report"><strong>{report.objects.length}</strong> Objekte · <strong>{report.triangles.toLocaleString('de-DE')}</strong> Dreiecke</div>
           {geometryMode === 'union' && (
             <div className="export-report">
-              <strong>{report.unionEligible}</strong> geschlossene Grundformen für Union · <strong>{report.unionSeparate}</strong> separat
+              <strong>{report.unionEligible}</strong> geschlossene Volumenkörper für Union · <strong>{report.unionSeparate}</strong> separat
             </div>
           )}
           {report.warnings.length > 0 && <ul className="warning-list">{report.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>}
           <p>
             {geometryMode === 'union'
-              ? 'Geschlossene Grundformen werden nur für die exportierte GLB boolesch vereinigt. Die Editor-Szene bleibt unverändert.'
+              ? 'Geschlossene Volumenkörper – auch bemalte – werden nur für die exportierte GLB boolesch vereinigt. Die Editor-Szene bleibt unverändert.'
               : 'Transformationen und Materialien werden eingebettet. Raster, Achsen und Editor-Helfer werden nicht exportiert.'}
           </p>
         </div>

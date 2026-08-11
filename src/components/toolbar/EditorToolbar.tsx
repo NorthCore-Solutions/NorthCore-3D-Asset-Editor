@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   setDimensionOverlayVisible,
   useDimensionOverlayVisible
@@ -29,6 +31,21 @@ export function EditorToolbar() {
   const setScene = useEditorStore((state) => state.setScene);
   const requestCameraView = useEditorStore((state) => state.requestCameraView);
   const dimensionsVisible = useDimensionOverlayVisible();
+  const [viewMenuOpen, setViewMenuOpen] = useState(false);
+  const [viewMenuPos, setViewMenuPos] = useState<{ left: number; top: number } | null>(null);
+  const viewMenuRef = useRef<HTMLDivElement>(null);
+  const viewMenuPopoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!viewMenuOpen) return;
+    const closeOnOutsidePointer = (event: PointerEvent): void => {
+      const target = event.target as Node;
+      if (viewMenuRef.current?.contains(target) || viewMenuPopoverRef.current?.contains(target)) return;
+      setViewMenuOpen(false);
+    };
+    document.addEventListener('pointerdown', closeOnOutsidePointer, true);
+    return () => document.removeEventListener('pointerdown', closeOnOutsidePointer, true);
+  }, [viewMenuOpen]);
 
   const selectTool = (mode: TransformMode): void => {
     setSurfacePaintSettings({ enabled: false, cameraView: null });
@@ -46,7 +63,45 @@ export function EditorToolbar() {
   return (
     <div className="toolbar">
       <div className="group">{tools.map((item) => <button key={item.mode} className={tool === item.mode ? 'active' : ''} title={item.key} onClick={() => selectTool(item.mode)}>{item.label}</button>)}</div>
-      <div className="group">{views.map((item) => <button key={item.view} onClick={() => selectCameraView(item.view)}>{item.label}</button>)}</div>
+      <div className="group">
+        <div className="view-menu" ref={viewMenuRef}>
+          <button
+            type="button"
+            className={viewMenuOpen ? 'active' : ''}
+            aria-haspopup="menu"
+            aria-expanded={viewMenuOpen}
+            onClick={(event) => {
+              if (!viewMenuOpen) {
+                const rect = event.currentTarget.getBoundingClientRect();
+                setViewMenuPos({ left: rect.left, top: rect.bottom + 4 });
+              }
+              setViewMenuOpen((open) => !open);
+            }}
+          >
+            Ansicht&nbsp;{viewMenuOpen ? '▴' : '▾'}
+          </button>
+          {viewMenuOpen && viewMenuPos && createPortal(
+            <div
+              className="view-menu-popover"
+              role="menu"
+              ref={viewMenuPopoverRef}
+              style={{ left: viewMenuPos.left, top: viewMenuPos.top }}
+            >
+              {views.map((item) => (
+                <button
+                  key={item.view}
+                  type="button"
+                  role="menuitem"
+                  onClick={() => { selectCameraView(item.view); setViewMenuOpen(false); }}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>,
+            document.body
+          )}
+        </div>
+      </div>
       <div className="group">
         <label><input type="checkbox" checked={scene.gridVisible} onChange={(event) => setScene({ gridVisible: event.target.checked })} /> Raster</label>
         <label><input type="checkbox" checked={scene.axesVisible} onChange={(event) => setScene({ axesVisible: event.target.checked })} /> Achsen</label>

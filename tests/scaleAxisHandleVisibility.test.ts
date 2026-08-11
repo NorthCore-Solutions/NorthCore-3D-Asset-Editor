@@ -99,3 +99,134 @@ describe('Seitenwahl der Skalier-Achspfeile', () => {
     expect(isScaleAxisHandleVisible(localPositiveX, axialEye)).toBe(false);
   });
 });
+
+describe('Skalier-Achspfeile bei festen Kameraansichten', () => {
+  const NEGATIVE = {
+    X: POSITIVE.X.clone().negate(),
+    Y: POSITIVE.Y.clone().negate(),
+    Z: POSITIVE.Z.clone().negate()
+  };
+  const FIXED_EYES = {
+    front: new THREE.Vector3(0, 0, 1),
+    back: new THREE.Vector3(0, 0, -1),
+    left: new THREE.Vector3(-1, 0, 0),
+    right: new THREE.Vector3(1, 0, 0),
+    top: new THREE.Vector3(0, 1, 0),
+    bottom: new THREE.Vector3(0, -1, 0)
+  };
+  const AXES = [
+    { positive: POSITIVE.X, negative: NEGATIVE.X },
+    { positive: POSITIVE.Y, negative: NEGATIVE.Y },
+    { positive: POSITIVE.Z, negative: NEGATIVE.Z }
+  ];
+
+  it('zeigt bei Vorne/Hinten je eine Seite von X und Y, Z bleibt ausgeblendet', () => {
+    for (const eye of [FIXED_EYES.front, FIXED_EYES.back]) {
+      expect(isScaleAxisHandleVisible(POSITIVE.X, eye)).toBe(true);
+      expect(isScaleAxisHandleVisible(NEGATIVE.X, eye)).toBe(false);
+      expect(isScaleAxisHandleVisible(POSITIVE.Y, eye)).toBe(true);
+      expect(isScaleAxisHandleVisible(NEGATIVE.Y, eye)).toBe(false);
+      // Blickachse: beide Seiten ausgeblendet.
+      expect(isScaleAxisHandleVisible(POSITIVE.Z, eye)).toBe(false);
+      expect(isScaleAxisHandleVisible(NEGATIVE.Z, eye)).toBe(false);
+    }
+  });
+
+  it('zeigt bei Links/Rechts je eine Seite von Y und Z, X bleibt ausgeblendet', () => {
+    for (const eye of [FIXED_EYES.left, FIXED_EYES.right]) {
+      expect(isScaleAxisHandleVisible(POSITIVE.X, eye)).toBe(false);
+      expect(isScaleAxisHandleVisible(NEGATIVE.X, eye)).toBe(false);
+      expect(isScaleAxisHandleVisible(POSITIVE.Y, eye)).toBe(true);
+      expect(isScaleAxisHandleVisible(NEGATIVE.Y, eye)).toBe(false);
+      expect(isScaleAxisHandleVisible(POSITIVE.Z, eye)).toBe(true);
+      expect(isScaleAxisHandleVisible(NEGATIVE.Z, eye)).toBe(false);
+    }
+  });
+
+  it('zeigt bei Oben/Unten je eine Seite von X und Z, Y bleibt ausgeblendet', () => {
+    for (const eye of [FIXED_EYES.top, FIXED_EYES.bottom]) {
+      expect(isScaleAxisHandleVisible(POSITIVE.X, eye)).toBe(true);
+      expect(isScaleAxisHandleVisible(NEGATIVE.X, eye)).toBe(false);
+      expect(isScaleAxisHandleVisible(POSITIVE.Z, eye)).toBe(true);
+      expect(isScaleAxisHandleVisible(NEGATIVE.Z, eye)).toBe(false);
+      expect(isScaleAxisHandleVisible(POSITIVE.Y, eye)).toBe(false);
+      expect(isScaleAxisHandleVisible(NEGATIVE.Y, eye)).toBe(false);
+    }
+  });
+
+  it('zeigt bei Oben/Unten mit minimalem Z-Versatz weiterhin je eine Z-Seite passend zum Vorzeichen', () => {
+    // Die App versetzt Oben/Unten minimal in Z (0.001), damit die Kamera-up-
+    // Achse eindeutig bleibt; die Z-Seitenwahl folgt dann dem Vorzeichen.
+    const topEye = eyeFrom(new THREE.Vector3(0, 8, 0.001));
+    expect(isScaleAxisHandleVisible(POSITIVE.Z, topEye)).toBe(true);
+    expect(isScaleAxisHandleVisible(NEGATIVE.Z, topEye)).toBe(false);
+    expect(isScaleAxisHandleVisible(POSITIVE.X, topEye)).toBe(true);
+    expect(isScaleAxisHandleVisible(NEGATIVE.X, topEye)).toBe(false);
+
+    const bottomEye = eyeFrom(new THREE.Vector3(0, -8, 0.001));
+    expect(isScaleAxisHandleVisible(POSITIVE.Z, bottomEye)).toBe(true);
+    expect(isScaleAxisHandleVisible(NEGATIVE.Z, bottomEye)).toBe(false);
+    expect(isScaleAxisHandleVisible(POSITIVE.X, bottomEye)).toBe(true);
+    expect(isScaleAxisHandleVisible(NEGATIVE.X, bottomEye)).toBe(false);
+  });
+
+  it('zeigt in jeder festen Ansicht höchstens einen Pfeil pro Achse', () => {
+    for (const eye of Object.values(FIXED_EYES)) {
+      for (const { positive, negative } of AXES) {
+        const positiveVisible = isScaleAxisHandleVisible(positive, eye);
+        const negativeVisible = isScaleAxisHandleVisible(negative, eye);
+        expect(positiveVisible && negativeVisible).toBe(false);
+      }
+    }
+  });
+
+  it('zeigt in jeder festen Ansicht genau die zwei bildebenen Achsen', () => {
+    for (const [view, eye] of Object.entries(FIXED_EYES)) {
+      const visibleAxes = AXES.filter(
+        ({ positive, negative }) =>
+          isScaleAxisHandleVisible(positive, eye) || isScaleAxisHandleVisible(negative, eye)
+      ).length;
+      expect(visibleAxes, `Ansicht ${view}`).toBe(2);
+    }
+  });
+
+  it('behandelt exakt senkrechte Dot=0-Fälle deterministisch (positive Seite)', () => {
+    const eye = new THREE.Vector3(0, 0, 1);
+    expect(POSITIVE.X.dot(eye)).toBe(0);
+    expect(isScaleAxisHandleVisible(POSITIVE.X, eye)).toBe(true);
+    expect(isScaleAxisHandleVisible(NEGATIVE.X, eye)).toBe(false);
+    expect(POSITIVE.Y.dot(eye)).toBe(0);
+    expect(isScaleAxisHandleVisible(POSITIVE.Y, eye)).toBe(true);
+    expect(isScaleAxisHandleVisible(NEGATIVE.Y, eye)).toBe(false);
+  });
+
+  it('wechselt die Seite, sobald die Kamera die Senkrechte nur minimal verlässt', () => {
+    const slightPositive = eyeFrom(new THREE.Vector3(0.5, 0, 8));
+    expect(isScaleAxisHandleVisible(POSITIVE.X, slightPositive)).toBe(true);
+    expect(isScaleAxisHandleVisible(NEGATIVE.X, slightPositive)).toBe(false);
+
+    const slightNegative = eyeFrom(new THREE.Vector3(-0.5, 0, 8));
+    expect(isScaleAxisHandleVisible(POSITIVE.X, slightNegative)).toBe(false);
+    expect(isScaleAxisHandleVisible(NEGATIVE.X, slightNegative)).toBe(true);
+  });
+
+  it('berücksichtigt Objektrotation auch bei festen Ansichten', () => {
+    // Objekt um 90° um Y gedreht: lokale Z-Achse zeigt in Welt ±X, lokale
+    // X-Achse in Welt ∓Z. Bei Frontansicht (Blick entlang Welt -Z) ist die
+    // lokale X-Achse die Blickachse und bleibt ausgeblendet; von der lokalen
+    // Z-Achse (jetzt Welt X) bleibt genau eine Seite sichtbar.
+    const rotation = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
+    const localPositiveX = POSITIVE.X.clone().applyQuaternion(rotation);
+    const localNegativeX = NEGATIVE.X.clone().applyQuaternion(rotation);
+    const localPositiveZ = POSITIVE.Z.clone().applyQuaternion(rotation);
+    const localNegativeZ = NEGATIVE.Z.clone().applyQuaternion(rotation);
+    expect(localPositiveX.z).toBeCloseTo(-1);
+    expect(localPositiveZ.x).toBeCloseTo(1);
+
+    const eye = FIXED_EYES.front;
+    expect(isScaleAxisHandleVisible(localPositiveX, eye)).toBe(false);
+    expect(isScaleAxisHandleVisible(localNegativeX, eye)).toBe(false);
+    expect(isScaleAxisHandleVisible(localPositiveZ, eye)).toBe(true);
+    expect(isScaleAxisHandleVisible(localNegativeZ, eye)).toBe(false);
+  });
+});

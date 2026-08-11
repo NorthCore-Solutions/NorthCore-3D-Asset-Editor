@@ -43,7 +43,7 @@ export function HierarchyPanel({ collapsed, onToggle }: HierarchyPanelProps) {
       {!collapsed && (
         objects.length === 0 ? <div className="empty-state">Füge links eine Form hinzu.</div> : (
           <table className="object-list">
-            <thead><tr><th style={{ width: 36 }}>S</th><th style={{ width: 36 }}>L</th><th>Name</th><th style={{ width: 120 }}>Typ</th><th style={{ width: 105 }}>Aktionen</th></tr></thead>
+            <thead><tr><th>S</th><th>L</th><th>Name</th><th>Typ</th><th>Aktionen</th></tr></thead>
             <tbody>
               {objects.map((object) => (
                 <tr
@@ -52,11 +52,11 @@ export function HierarchyPanel({ collapsed, onToggle }: HierarchyPanelProps) {
                   onClick={(event) => select(object.id, event.shiftKey)}
                 >
                   <td><button className="icon-button" title="Sichtbarkeit" onClick={(event) => { event.stopPropagation(); updateObject(object.id, { visible: !object.visible }); }}>{object.visible ? '●' : '○'}</button></td>
-                  <td><button className="icon-button" title="Sperren" onClick={(event) => { event.stopPropagation(); updateObject(object.id, { locked: !object.locked }); }}>{object.locked ? '🔒' : '–'}</button></td>
+                  <td><button className="icon-button" title="Sperren" onClick={(event) => { event.stopPropagation(); updateObject(object.id, { locked: !object.locked }); }}>{object.locked ? '◆' : '◇'}</button></td>
                   <td><input value={object.name} onClick={(event) => event.stopPropagation()} onChange={(event) => updateObject(object.id, { name: event.target.value })} /></td>
                   <td>{object.parentId ? `${object.type} · Gruppe` : object.type}</td>
                   <td>
-                    <button className="icon-button" title="Duplizieren" onClick={(event) => { event.stopPropagation(); duplicateObject(object.id); }}>D</button>{' '}
+                    <button className="icon-button" title="Duplizieren" onClick={(event) => { event.stopPropagation(); duplicateObject(object.id); }}>⧉</button>
                     <button className="icon-button danger" title="Löschen" onClick={(event) => { event.stopPropagation(); deleteObject(object.id); }}>×</button>
                   </td>
                 </tr>

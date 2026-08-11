@@ -1,5 +1,4 @@
 .standard-color-picker {
-  position: relative;
   margin: 7px 0 18px;
 }
 
@@ -76,14 +75,10 @@
 
 .right-panel > .standard-color-overlay,
 .right-panel .standard-color-overlay {
-  position: fixed;
-  top: calc(var(--topbar-height) + var(--toolbar-height));
-  right: 0;
-  bottom: calc(var(--status-height) + var(--hierarchy-panel-height));
-  left: auto;
-  width: var(--properties-panel-width, 300px);
-  border-left: 1px solid var(--border);
-  box-shadow: -8px 0 18px rgba(0, 0, 0, 0.2);
+  position: absolute;
+  inset: 0;
+  border-left: 0;
+  box-shadow: none;
 }
 
 .standard-color-overlay-header {
@@ -184,7 +179,7 @@
 }
 
 .standard-color-list-entry.selected {
-  background: #273138;
+  background: var(--panel-light);
 }
 
 .standard-color-list-swatch {

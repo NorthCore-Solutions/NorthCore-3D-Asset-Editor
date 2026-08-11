@@ -5,6 +5,7 @@
 
 .paint-mode-button {
   height: 31px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -26,6 +27,7 @@
 .paint-tool-grid button,
 .color-target-toggle button {
   min-height: 30px;
+  font-size: 12px;
 }
 
 .paint-brush-size {
@@ -156,6 +158,7 @@
 .paint-copy-button {
   width: 100%;
   min-height: 30px;
+  font-size: 12px;
 }
 
 .paint-surface-preview-title {
@@ -170,7 +173,7 @@
   max-width: 280px;
   justify-self: center;
   padding: 6px;
-  border: 1px solid #425159;
+  border: 1px solid var(--border-strong);
   border-radius: 4px;
   background-image: conic-gradient(#c7c7c7 25%, #eeeeee 0 50%, #c7c7c7 0 75%, #eeeeee 0);
   background-size: 16px 16px;
@@ -216,8 +219,4 @@
 .merged-color-block {
   display: grid;
   gap: 7px;
-}
-
-.merged-color-block .palette {
-  margin-top: 0;
 }
