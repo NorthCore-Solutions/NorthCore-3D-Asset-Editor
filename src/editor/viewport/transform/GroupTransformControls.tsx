@@ -10,6 +10,7 @@ import {
   surfaceSnapTargetFromSceneObject,
   surfaceSnapTargetFromSceneObjects
 } from '../../snapping/objectSurfaceSnap';
+import { snapScaleValueToWorldStep } from '../../snapping/scaleWorldSnap';
 import { useEditorStore } from '../../../store/editorStore';
 import type { SceneObjectData, SnapSettings, TransformMode } from '../../../types/editor';
 import type { MeshRegistry } from '../viewportTypes';
@@ -17,6 +18,7 @@ import type { MeshRegistry } from '../viewportTypes';
 interface GroupDragState {
   proxyMatrix: THREE.Matrix4;
   objectMatrices: Map<string, THREE.Matrix4>;
+  groupWorldSize: THREE.Vector3;
   surfaceSnapSession: TranslationSurfaceSnapSession;
 }
 
@@ -50,16 +52,19 @@ export function GroupTransformControls({ selectedIds, registry, tool, snap, onSn
   const start = () => {
     resetProxy();
     const objectMatrices = new Map<string, THREE.Matrix4>();
+    const groupBounds = new THREE.Box3().makeEmpty();
     for (const id of selectedIds) {
       const mesh = registry.current.get(id);
       if (!mesh) continue;
       mesh.updateMatrixWorld(true);
       objectMatrices.set(id, mesh.matrixWorld.clone());
+      groupBounds.expandByObject(mesh, true);
     }
     proxy.updateMatrixWorld(true);
     dragRef.current = {
       proxyMatrix: proxy.matrixWorld.clone(),
       objectMatrices,
+      groupWorldSize: groupBounds.isEmpty() ? new THREE.Vector3(1, 1, 1) : groupBounds.getSize(new THREE.Vector3()),
       surfaceSnapSession: createTranslationSurfaceSnapSession()
     };
     onSnapTargetChange(null);
@@ -81,10 +86,27 @@ export function GroupTransformControls({ selectedIds, registry, tool, snap, onSn
       );
     }
 
-    const effectiveProxyMatrix = proxy.matrixWorld.clone();
-    if (tool === 'translate') {
-      effectiveProxyMatrix.setPosition(effectiveProxyPosition);
+    const effectiveProxyScale = proxy.scale.clone();
+    if (tool === 'scale' && snap.enabled && snap.scale > 0) {
+      const snapComponent = (rawScale: number, worldSize: number): number => (
+        Math.abs(rawScale - 1) <= 0.000001
+          ? 1
+          : snapScaleValueToWorldStep(rawScale, worldSize, snap.scale)
+      );
+      effectiveProxyScale.set(
+        snapComponent(proxy.scale.x, drag.groupWorldSize.x),
+        snapComponent(proxy.scale.y, drag.groupWorldSize.y),
+        snapComponent(proxy.scale.z, drag.groupWorldSize.z)
+      );
+      proxy.scale.copy(effectiveProxyScale);
+      proxy.updateMatrixWorld(true);
     }
+
+    const effectiveProxyMatrix = new THREE.Matrix4().compose(
+      effectiveProxyPosition,
+      proxy.quaternion,
+      effectiveProxyScale
+    );
     const delta = effectiveProxyMatrix.multiply(drag.proxyMatrix.clone().invert());
     const liveObjects = useEditorStore.getState().objects;
     const transformedObjects = new Map<string, SceneObjectData>();
@@ -192,7 +214,7 @@ export function GroupTransformControls({ selectedIds, registry, tool, snap, onSn
         size={tool === 'rotate' ? 1.4 : 1.15}
         translationSnap={tool === 'translate' ? undefined : (snap.enabled ? snap.position : undefined)}
         rotationSnap={snap.enabled ? THREE.MathUtils.degToRad(snap.rotation) : undefined}
-        scaleSnap={snap.enabled ? snap.scale : undefined}
+        scaleSnap={undefined}
         onMouseDown={start}
         onObjectChange={sync}
         onMouseUp={stop}
