@@ -50,6 +50,9 @@ input:focus, select:focus { outline: 1px solid var(--green-accent); border-color
 .toolbar label.disabled { opacity: 0.45; cursor: not-allowed; }
 .toolbar label.disabled input { cursor: not-allowed; }
 .toolbar input[type="number"] { width: 62px; height: 26px; padding: 0 5px; }
+.view-menu { position: relative; }
+.view-menu-popover { position: absolute; z-index: 40; top: calc(100% + 4px); left: 0; display: grid; gap: 4px; min-width: 110px; padding: 5px; background: var(--panel); border: 1px solid var(--border-strong); box-shadow: 0 10px 24px rgba(0,0,0,.42); }
+.view-menu-popover button { width: 100%; text-align: left; white-space: nowrap; }
 .workspace { min-height: 0; display: grid; grid-template-columns: 230px minmax(420px, 1fr) 300px; grid-template-rows: minmax(0, 1fr) 190px; }
 .panel { min-height: 0; overflow: auto; background: var(--panel); border-color: var(--border); border-style: solid; border-width: 0; }
 .left-panel { border-right-width: 1px; }
