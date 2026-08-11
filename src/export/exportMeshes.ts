@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { Brush } from 'three-bvh-csg';
 import type { SceneObjectData } from '../types/editor';
 import type { ExportResources } from './exportTypes';
 import { createExportMaterial } from './exportMaterials';
@@ -24,7 +25,7 @@ export function addSeparateMesh(
 
 function addUnionResult(
   group: THREE.Group,
-  result: import('three-bvh-csg').Brush,
+  result: Brush,
   resources: ExportResources
 ): void {
   const materials = unionMaterials(result);
