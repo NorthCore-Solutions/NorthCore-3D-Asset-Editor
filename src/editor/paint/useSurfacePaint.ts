@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import type * as THREE from 'three';
 import type { SceneObjectData } from '../../types/editor';
 import type { SurfacePaintSettings } from './surfacePaintSession';
 import {
