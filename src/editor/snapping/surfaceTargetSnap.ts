@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import type * as THREE from 'three';
 import { transformSurfaceSnapAnchors, type SurfaceSnapAnchor } from './surfaceSnapTopology';
 import type { ObjectSurfaceSnapResult, SurfaceSnapTarget } from './objectSurfaceSnapTypes';
 
