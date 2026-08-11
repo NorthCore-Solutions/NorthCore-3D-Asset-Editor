@@ -2,6 +2,10 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { findFormSurfaceSnap, isFormType } from '../../snapping/primitiveSurfaceSnap';
+import {
+  snapScaleValueToWorldStep,
+  snapUniformScaleFactorToWorldStep
+} from '../../snapping/scaleWorldSnap';
 import { invertHexColor } from '../../paint/useSurfacePaint';
 import { useEditorStore } from '../../../store/editorStore';
 import type { SceneObjectData, SnapSettings } from '../../../types/editor';
@@ -261,7 +265,7 @@ function CornerScaleHandle({ mesh, bounds, sides, onPointerDown }: {
       </mesh>
       <mesh renderOrder={1002} onPointerDown={(event) => onPointerDown(sides, event)}>
         <planeGeometry args={[CORNER_SCALE_HITBOX_SIZE, CORNER_SCALE_HITBOX_SIZE]} />
-        <meshBasicMaterial transparent opacity={0} side={THREE.DoubleSide} depthTest={false} depthWrite={false} toneMapped={false} />
+        <meshBasicMaterial transparent opacity={0} side={THREE.DoubleSide} depthTest={false} depthWrite={false} fog={false} toneMapped={false} />
       </mesh>
     </group>
   );
@@ -287,6 +291,7 @@ export function ScaleHandles({ mesh, geometry, object, snap, onSnapTargetChange,
     geometry.computeBoundingBox();
     return geometry.boundingBox?.clone() ?? new THREE.Box3(new THREE.Vector3(-0.5, -0.5, -0.5), new THREE.Vector3(0.5, 0.5, 0.5));
   }, [geometry]);
+  const localBoundsSize = useMemo(() => bounds.getSize(new THREE.Vector3()), [bounds]);
 
   const removeWindowListeners = () => {
     window.removeEventListener('pointermove', handlePointerMove, true);
@@ -302,6 +307,12 @@ export function ScaleHandles({ mesh, geometry, object, snap, onSnapTargetChange,
       scale: [mesh.scale.x, mesh.scale.y, mesh.scale.z]
     }, false);
   };
+
+  const baseWorldSizes = (startScale: THREE.Vector3): [number, number, number] => [
+    Math.abs(localBoundsSize.x * startScale.x),
+    Math.abs(localBoundsSize.y * startScale.y),
+    Math.abs(localBoundsSize.z * startScale.z)
+  ];
 
   const applySurfaceScaleSnap = (drag: ScaleDragState) => {
     if (drag.kind === 'center') {
@@ -389,7 +400,11 @@ export function ScaleHandles({ mesh, geometry, object, snap, onSnapTargetChange,
       const upwardPixels = drag.startPointer.y - event.clientY;
       let factor = Math.max(0.02, 1 + upwardPixels / drag.pixelsPerFactor);
       if (snap.enabled && snap.scale > 0) {
-        factor = Math.max(0.02, Math.round(factor / snap.scale) * snap.scale);
+        factor = snapUniformScaleFactorToWorldStep(
+          factor,
+          baseWorldSizes(drag.startScale),
+          snap.scale
+        );
       }
       const nextScale = drag.startScale.clone().multiplyScalar(factor);
       mesh.scale.copy(nextScale);
@@ -413,7 +428,9 @@ export function ScaleHandles({ mesh, geometry, object, snap, onSnapTargetChange,
       const startWorldSize = drag.localSize * startScale;
       const minimumScale = 0.02;
       let nextScale = Math.max(minimumScale, (startWorldSize + worldDelta) / drag.localSize);
-      if (snap.enabled && snap.scale > 0) nextScale = Math.max(minimumScale, Math.round(nextScale / snap.scale) * snap.scale);
+      if (snap.enabled && snap.scale > 0) {
+        nextScale = snapScaleValueToWorldStep(nextScale, drag.localSize, snap.scale, minimumScale);
+      }
       const nextScaleVector = drag.startScale.clone();
       setAxisValue(nextScaleVector, drag.axis, nextScale);
       mesh.scale.copy(nextScaleVector);
@@ -426,7 +443,13 @@ export function ScaleHandles({ mesh, geometry, object, snap, onSnapTargetChange,
     }
 
     let factor = Math.max(0.02, (drag.startDiagonalWorld + worldDelta) / drag.startDiagonalWorld);
-    if (snap.enabled && snap.scale > 0) factor = Math.max(0.02, Math.round(factor / snap.scale) * snap.scale);
+    if (snap.enabled && snap.scale > 0) {
+      factor = snapUniformScaleFactorToWorldStep(
+        factor,
+        baseWorldSizes(drag.startScale),
+        snap.scale
+      );
+    }
     const nextScale = drag.startScale.clone().multiplyScalar(factor);
     mesh.scale.copy(nextScale);
     const localOffset = new THREE.Vector3(
