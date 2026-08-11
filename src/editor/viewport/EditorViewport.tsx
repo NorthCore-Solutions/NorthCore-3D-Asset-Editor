@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
-import * as THREE from 'three';
+import type * as THREE from 'three';
 import { useEditorStore } from '../../store/editorStore';
 import { useSurfacePaintSettings } from '../paint/useSurfacePaint';
 import { isNativeAndroid } from '../../platform/nativeFileDialog';
