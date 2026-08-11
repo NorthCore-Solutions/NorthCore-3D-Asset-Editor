@@ -3,11 +3,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useEditorStore } from '../../store/editorStore';
-import type { CameraView, SceneObjectData } from '../../types/editor';
+import type { SceneObjectData } from '../../types/editor';
 import { getSurfaceUvAtlas, type SurfaceUvAtlas } from '../../geometry/uvAtlas';
 import {
   composeSurfaceAtlasCanvas,
-  createPaintTextureData,
   getSurfaceRasterMetrics,
   loadSurfaceCanvases,
   PAINT_BASE_ALPHA,
@@ -30,6 +29,9 @@ import {
   type SurfacePaintSettings
 } from './surfacePaintSession';
 import { shouldConnectStroke, type StrokeCoordinate } from './strokeContinuity';
+import { createPaintDocument, paintTextureNeedsMigration } from './paintDocument';
+import { linePoints } from './paintStroke';
+import { surfaceCameraDestination } from './surfaceCamera';
 
 const SCALE_RENDER_SETTLE_MS = 110;
 
@@ -134,62 +136,10 @@ function renderAtlas(
   return false;
 }
 
-function linePoints(from: [number, number], to: [number, number]): Array<[number, number]> {
-  const points: Array<[number, number]> = [];
-  let [x0, y0] = from;
-  const [x1, y1] = to;
-  const dx = Math.abs(x1 - x0);
-  const sx = x0 < x1 ? 1 : -1;
-  const dy = -Math.abs(y1 - y0);
-  const sy = y0 < y1 ? 1 : -1;
-  let error = dx + dy;
-
-  for (;;) {
-    points.push([x0, y0]);
-    if (x0 === x1 && y0 === y1) break;
-    const doubled = error * 2;
-    if (doubled >= dy) { error += dy; x0 += sx; }
-    if (doubled <= dx) { error += dx; y0 += sy; }
-  }
-
-  return points;
-}
-
 function blockEvent(event: ThreeEvent<PointerEvent>): void {
   event.stopPropagation();
   event.nativeEvent.preventDefault();
   event.nativeEvent.stopImmediatePropagation();
-}
-
-function cameraDestination(
-  view: CameraView,
-  target: THREE.Vector3,
-  distance: number
-): { position: THREE.Vector3; up: THREE.Vector3 } {
-  const up = new THREE.Vector3(0, 1, 0);
-
-  switch (view) {
-    case 'perspective': return {
-      position: target.clone().add(new THREE.Vector3(6, 5, 7)),
-      up
-    };
-    case 'focus': return {
-      position: target.clone().add(new THREE.Vector3(distance, distance * 0.65, distance)),
-      up
-    };
-    case 'front': return { position: target.clone().add(new THREE.Vector3(0, 0, distance)), up };
-    case 'back': return { position: target.clone().add(new THREE.Vector3(0, 0, -distance)), up };
-    case 'left': return { position: target.clone().add(new THREE.Vector3(-distance, 0, 0)), up };
-    case 'right': return { position: target.clone().add(new THREE.Vector3(distance, 0, 0)), up };
-    case 'top': return {
-      position: target.clone().add(new THREE.Vector3(0, distance, 0.001)),
-      up: new THREE.Vector3(0, 0, -1)
-    };
-    case 'bottom': return {
-      position: target.clone().add(new THREE.Vector3(0, -distance, 0.001)),
-      up: new THREE.Vector3(0, 0, 1)
-    };
-  }
 }
 
 function smoothStep(value: number): number {
@@ -283,21 +233,12 @@ export function useSurfacePaint(
 
   const persist = (): void => {
     if (!ensureCurrentLayers()) return;
-    const created = createPaintTextureData(
+    const data = createPaintDocument(
       surface.layers,
       atlas,
       metricsRef.current,
       object.material.color
     );
-    const data = created.surfaceGrid
-      ? {
-          ...created,
-          surfaceGrid: {
-            ...created.surfaceGrid,
-            baseColor: object.material.color.toUpperCase()
-          }
-        }
-      : created;
     loadedDataUrlRef.current = data.dataUrl;
     loadedBaseColorRef.current = object.material.color.toUpperCase();
     requestedDataUrlRef.current = undefined;
@@ -314,7 +255,7 @@ export function useSurfacePaint(
       3.5,
       Math.max(Math.abs(object.scale[0]), Math.abs(object.scale[1]), Math.abs(object.scale[2])) * 4
     );
-    const destination = cameraDestination(settings.cameraView, target, distance);
+    const destination = surfaceCameraDestination(settings.cameraView, target, distance);
 
     const startUp = camera.up.clone().normalize();
     const endUp = destination.up.clone().normalize();
@@ -451,27 +392,8 @@ export function useSurfacePaint(
         loadedDataUrlRef.current = dataUrl;
         loadedBaseColorRef.current = baseColor;
 
-        if (paintTexture) {
-          const currentGrid = paintTexture.surfaceGrid;
-          const needsMigration = !currentGrid
-            || currentGrid.version !== 2
-            || currentGrid.atlasSignature !== atlas.signature
-            || currentGrid.baseColor?.toUpperCase() !== object.material.color.toUpperCase()
-            || !currentGrid.sourceDataUrl
-            || !currentGrid.sourceWidth
-            || !currentGrid.sourceHeight
-            || currentGrid.surfaces.length !== metricsRef.current.length
-            || currentGrid.surfaces.some((stored, index) => {
-              const metric = metricsRef.current[index];
-              return !metric
-                || !stored.sourceWidth
-                || !stored.sourceHeight
-                || stored.width !== metric.width
-                || stored.height !== metric.height
-                || Math.abs(stored.coverageU - metric.coverageU) > 0.000001
-                || Math.abs(stored.coverageV - metric.coverageV) > 0.000001;
-            });
-          if (needsMigration) persist();
+        if (paintTextureNeedsMigration(paintTexture, atlas, metricsRef.current, object.material.color)) {
+          persist();
         }
       })
       .catch((error: unknown) => {
