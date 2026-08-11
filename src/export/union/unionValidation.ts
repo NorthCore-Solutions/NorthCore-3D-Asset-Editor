@@ -1,5 +1,5 @@
-import * as THREE from 'three';
-import { Brush } from 'three-bvh-csg';
+import type * as THREE from 'three';
+import type { Brush } from 'three-bvh-csg';
 
 function effectiveDrawRange(geometry: THREE.BufferGeometry): { start: number; count: number } {
   const total = geometry.index?.count ?? geometry.getAttribute('position').count;
