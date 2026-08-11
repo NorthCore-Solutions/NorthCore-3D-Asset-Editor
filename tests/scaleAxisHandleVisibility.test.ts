@@ -5,72 +5,97 @@ import {
   SCALE_AXIS_HIDE_THRESHOLD
 } from '../src/editor/viewport/scaleAxisHandleVisibility';
 
-// Referenz: Verschiebe-Pfeile der TransformControls (three.js, mode "translate").
-// Dort wird pro Achse ausschließlich die positive Richtung gezeigt, ohne
-// kameraabhängigen Seitenwechsel; ausgeblendet wird nur bei nahezu axialem
-// Blick (|Achse · Blick| > 0.99).
+// Sichtbarkeitsregel der Skalier-Achspfeile: Pro Achse ist genau der
+// kameraseitig erreichbare Pfeil sichtbar; beim Drehen der Kamera wechselt
+// die Seite. Bei nahezu axialem Blick wird die Achse ausgeblendet
+// (analog zur Ausblendung der Verschiebe-Pfeile der TransformControls).
 const eyeFrom = (cameraPosition: THREE.Vector3, target = new THREE.Vector3()): THREE.Vector3 =>
   cameraPosition.clone().sub(target).normalize();
 
-describe('Sichtbarkeit der Skalier-Achspfeile (Referenz: Verschieben)', () => {
-  it('zeigt bei schrägem Blick wie Verschieben die positiven X/Y/Z-Richtungen', () => {
+const POSITIVE = {
+  X: new THREE.Vector3(1, 0, 0),
+  Y: new THREE.Vector3(0, 1, 0),
+  Z: new THREE.Vector3(0, 0, 1)
+};
+
+describe('Seitenwahl der Skalier-Achspfeile', () => {
+  it('zeigt in normaler Ansicht maximal einen Pfeil je Achse', () => {
     const eye = eyeFrom(new THREE.Vector3(5, 3, 8));
 
-    expect(isScaleAxisHandleVisible(1, new THREE.Vector3(1, 0, 0), eye)).toBe(true);
-    expect(isScaleAxisHandleVisible(1, new THREE.Vector3(0, 1, 0), eye)).toBe(true);
-    expect(isScaleAxisHandleVisible(1, new THREE.Vector3(0, 0, 1), eye)).toBe(true);
-  });
-
-  it('wechselt beim Drehen der Kamera nicht die Seite', () => {
-    // Verschieben zeigt die positiven Richtungen unabhängig von der
-    // Kameraseite; Skalieren muss sich genauso verhalten.
-    const eyes = [
-      eyeFrom(new THREE.Vector3(5, 3, 8)),
-      eyeFrom(new THREE.Vector3(-5, 3, 8)),
-      eyeFrom(new THREE.Vector3(-5, 3, -8)),
-      eyeFrom(new THREE.Vector3(5, 3, -8))
-    ];
-
-    for (const eye of eyes) {
-      expect(isScaleAxisHandleVisible(1, new THREE.Vector3(1, 0, 0), eye)).toBe(true);
-      expect(isScaleAxisHandleVisible(-1, new THREE.Vector3(-1, 0, 0), eye)).toBe(false);
+    for (const axis of [POSITIVE.X, POSITIVE.Y, POSITIVE.Z]) {
+      const positiveVisible = isScaleAxisHandleVisible(axis, eye);
+      const negativeVisible = isScaleAxisHandleVisible(axis.clone().negate(), eye);
+      expect(positiveVisible).not.toBe(negativeVisible);
     }
   });
 
-  it('blendet eine Achse bei nahezu axialem Blick wie Verschieben aus', () => {
-    const axis = new THREE.Vector3(1, 0, 0);
-    const axialEye = eyeFrom(new THREE.Vector3(10, 0.01, 0));
-    expect(Math.abs(axis.dot(axialEye))).toBeGreaterThan(SCALE_AXIS_HIDE_THRESHOLD);
+  it('zeigt die kameraseitig erreichbare Seite', () => {
+    // Kamera auf der positiven Seite aller Achsen: positive Pfeile sichtbar.
+    const eye = eyeFrom(new THREE.Vector3(5, 3, 8));
 
-    expect(isScaleAxisHandleVisible(1, axis, axialEye)).toBe(false);
-    expect(isScaleAxisHandleVisible(-1, axis.clone().negate(), axialEye)).toBe(false);
+    expect(isScaleAxisHandleVisible(POSITIVE.X, eye)).toBe(true);
+    expect(isScaleAxisHandleVisible(POSITIVE.Y, eye)).toBe(true);
+    expect(isScaleAxisHandleVisible(POSITIVE.Z, eye)).toBe(true);
+    expect(isScaleAxisHandleVisible(POSITIVE.X.clone().negate(), eye)).toBe(false);
+    expect(isScaleAxisHandleVisible(POSITIVE.Y.clone().negate(), eye)).toBe(false);
+    expect(isScaleAxisHandleVisible(POSITIVE.Z.clone().negate(), eye)).toBe(false);
   });
 
-  it('lässt eine Achse genau am Schwellenwert wie Verschieben sichtbar', () => {
-    const axis = new THREE.Vector3(1, 0, 0);
+  it('wechselt beim Drehen der Kamera auf die gegenüberliegende Seite', () => {
+    // Kamera auf die negative X-/Z-Seite gedreht: Die X- und Z-Pfeile
+    // springen auf die gegenüberliegende Objektseite.
+    const eye = eyeFrom(new THREE.Vector3(-5, 3, -8));
+
+    expect(isScaleAxisHandleVisible(POSITIVE.X, eye)).toBe(false);
+    expect(isScaleAxisHandleVisible(POSITIVE.X.clone().negate(), eye)).toBe(true);
+    expect(isScaleAxisHandleVisible(POSITIVE.Z, eye)).toBe(false);
+    expect(isScaleAxisHandleVisible(POSITIVE.Z.clone().negate(), eye)).toBe(true);
+    // Die Y-Seite bleibt, weil die Kamera weiterhin oberhalb liegt.
+    expect(isScaleAxisHandleVisible(POSITIVE.Y, eye)).toBe(true);
+    expect(isScaleAxisHandleVisible(POSITIVE.Y.clone().negate(), eye)).toBe(false);
+  });
+
+  it('blendet eine Achse bei nahezu axialem Blick aus', () => {
+    const axialEyes = [
+      eyeFrom(new THREE.Vector3(10, 0.01, 0)),
+      eyeFrom(new THREE.Vector3(-10, 0.01, 0))
+    ];
+
+    for (const eye of axialEyes) {
+      expect(Math.abs(POSITIVE.X.dot(eye))).toBeGreaterThan(SCALE_AXIS_HIDE_THRESHOLD);
+      expect(isScaleAxisHandleVisible(POSITIVE.X, eye)).toBe(false);
+      expect(isScaleAxisHandleVisible(POSITIVE.X.clone().negate(), eye)).toBe(false);
+    }
+  });
+
+  it('lässt den kameraseitigen Pfeil genau am Schwellenwert sichtbar', () => {
     const boundaryEye = new THREE.Vector3(
       SCALE_AXIS_HIDE_THRESHOLD,
       Math.sqrt(1 - SCALE_AXIS_HIDE_THRESHOLD * SCALE_AXIS_HIDE_THRESHOLD),
       0
     );
 
-    expect(isScaleAxisHandleVisible(1, axis, boundaryEye)).toBe(true);
+    expect(isScaleAxisHandleVisible(POSITIVE.X, boundaryEye)).toBe(true);
+    expect(isScaleAxisHandleVisible(POSITIVE.X.clone().negate(), boundaryEye)).toBe(false);
   });
 
-  it('berücksichtigt die Objektrotation in der Achsrichtung', () => {
-    // Objekt um 180° um Y gedreht: lokale +X-Achse zeigt in Welt -X. Die
-    // Sichtbarkeitsentscheidung folgt der gedrehten Achsrichtung, weiterhin
-    // ausschließlich für die positive lokale Seite.
+  it('berücksichtigt die Objektrotation in der Seitenwahl', () => {
+    // Objekt um 180° um Y gedreht: lokale +X-Achse zeigt in Welt -X. Für
+    // eine Kamera auf der positiven X-Seite ist damit der lokale -X-Pfeil
+    // (Welt +X) der erreichbare.
     const rotation = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
-    const worldAxis = new THREE.Vector3(1, 0, 0).applyQuaternion(rotation);
-    expect(worldAxis.x).toBeCloseTo(-1);
+    const localPositiveX = POSITIVE.X.clone().applyQuaternion(rotation);
+    const localNegativeX = POSITIVE.X.clone().negate().applyQuaternion(rotation);
+    expect(localPositiveX.x).toBeCloseTo(-1);
+    expect(localNegativeX.x).toBeCloseTo(1);
 
     const eye = eyeFrom(new THREE.Vector3(5, 3, 8));
-    expect(isScaleAxisHandleVisible(1, worldAxis, eye)).toBe(true);
-    expect(isScaleAxisHandleVisible(-1, worldAxis.clone().negate(), eye)).toBe(false);
+    expect(isScaleAxisHandleVisible(localPositiveX, eye)).toBe(false);
+    expect(isScaleAxisHandleVisible(localNegativeX, eye)).toBe(true);
 
-    // Blick entlang der gedrehten Achse: Ausblendung wie bei Verschieben.
-    const axialEye = worldAxis.clone();
-    expect(isScaleAxisHandleVisible(1, worldAxis, axialEye)).toBe(false);
+    // Blick entlang der gedrehten Achse: Ausblendung bleibt erhalten.
+    const axialEye = localNegativeX.clone();
+    expect(isScaleAxisHandleVisible(localNegativeX, axialEye)).toBe(false);
+    expect(isScaleAxisHandleVisible(localPositiveX, axialEye)).toBe(false);
   });
 });

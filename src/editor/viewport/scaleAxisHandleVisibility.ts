@@ -3,16 +3,20 @@ import type * as THREE from 'three';
 export type ScaleAxis = 'X' | 'Y' | 'Z';
 export type ScaleSide = -1 | 1;
 
-// Sichtbarkeitsregel 1:1 der Verschiebe-Pfeile der TransformControls
-// (three.js, mode "translate"): Pro Achse wird ausschließlich die positive
-// Richtung gezeigt; ein kameraabhängiger Seitenwechsel findet nicht statt.
-// Eine Achse wird nur bei nahezu axialem Blick ausgeblendet
-// (|Achsenrichtung · Blickrichtung| > SCALE_AXIS_HIDE_THRESHOLD).
-// Die Objektrotation steckt bereits in der übergebenen Welt-Achsrichtung.
+// Sichtbarkeitsregel der Skalier-Achspfeile: Pro Achse ist nur der
+// kameraseitig erreichbare Pfeil sichtbar; beim Drehen der Kamera um das
+// Objekt wechselt der Pfeil auf die gegenüberliegende Seite, sodass aus
+// beiden Richtungen skaliert werden kann. Bei nahezu axialem Blick entlang
+// einer Achse wird diese ausgeblendet
+// (Achsenrichtung · Blickrichtung > SCALE_AXIS_HIDE_THRESHOLD, analog zur
+// Ausblendung der Verschiebe-Pfeile der TransformControls). Die
+// Objektrotation steckt bereits in der übergebenen Welt-Achsrichtung.
 export const SCALE_AXIS_HIDE_THRESHOLD = 0.99;
 
 export const isScaleAxisHandleVisible = (
-  side: ScaleSide,
   worldAxisDirection: THREE.Vector3,
   eyeDirection: THREE.Vector3
-): boolean => side === 1 && Math.abs(worldAxisDirection.dot(eyeDirection)) <= SCALE_AXIS_HIDE_THRESHOLD;
+): boolean => {
+  const facing = worldAxisDirection.dot(eyeDirection);
+  return facing > 0 && facing <= SCALE_AXIS_HIDE_THRESHOLD;
+};

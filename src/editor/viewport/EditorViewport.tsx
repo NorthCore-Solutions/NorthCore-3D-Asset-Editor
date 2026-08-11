@@ -389,14 +389,15 @@ function ScaleHandle({ mesh, bounds, axis, side, color, onPointerDown }: {
     handle.quaternion.copy(mesh.quaternion);
     handle.scale.setScalar(scaleGizmoWorldScale(camera, handle.position));
 
-    // Sichtbarkeit 1:1 wie die Verschiebe-Pfeile der TransformControls: Pro
-    // Achse wird immer die positive Richtung gezeigt (kein kameraabhängiger
-    // Seitenwechsel); die Achse entfällt nur bei nahezu axialem Blick. Die
-    // Objektrotation fließt über das Welt-Quaternion in die Achsrichtung ein.
+    // Pro Achse bleibt nur der kameraseitig erreichbare Pfeil sichtbar; beim
+    // Drehen der Kamera wechselt er auf die gegenüberliegende Seite. Die Regel
+    // zum Ausblenden bei nahezu axialem Kamerablick (analog zu den
+    // Verschiebe-Pfeilen) bleibt erhalten. Die Objektrotation fließt über das
+    // Welt-Quaternion in die Achsrichtung ein.
     mesh.getWorldQuaternion(scaleHandleQuaternion);
     scaleHandleAxis.copy(axisVector(axis, side)).applyQuaternion(scaleHandleQuaternion);
     cameraEyeVector(camera, handle.position, scaleHandleEye);
-    handle.visible = isScaleAxisHandleVisible(side, scaleHandleAxis, scaleHandleEye);
+    handle.visible = isScaleAxisHandleVisible(scaleHandleAxis, scaleHandleEye);
   });
 
   return (
