@@ -5,6 +5,7 @@ import { animationStore } from '../animation/store';
 import { legacyStore } from '../animation/legacyStore';
 import { Dialog } from '../animation/Dialog';
 import '../animation/builder.css';
+import './editor-launcher.css';
 
 const AssetEditor = lazy(() => import('./App').then((module) => ({ default: module.App })));
 const AnimationBuilder = lazy(() =>
@@ -36,7 +37,7 @@ export function EditorLauncher() {
     <>
       <Suspense fallback={<div className="editor-launcher">Editor wird geladen …</div>}>
         {assetVisited && (
-          <div hidden={editor !== 'asset'}>
+          <div className="asset-editor-host" hidden={editor !== 'asset'}>
             <AssetEditor active={editor === 'asset'} />
             <button className="asset-return" onClick={exit}>
               ‹ Editor-Auswahl

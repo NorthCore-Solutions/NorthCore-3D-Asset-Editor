@@ -1,0 +1,4 @@
+.asset-editor-host {
+  /* Keep App's percentage height connected to the dimensioned root. */
+  height: 100%;
+}
