@@ -20,6 +20,7 @@
     "@capawesome/capacitor-live-update": "8.3.0",
     "@react-three/drei": "10.7.7",
     "@react-three/fiber": "9.6.1",
+    "fast-png": "^8.0.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "three": "0.185.1",
@@ -30,6 +31,7 @@
   "devDependencies": {
     "@capacitor/cli": "^8.5.0",
     "@eslint/js": "9.39.1",
+    "@playwright/test": "^1.63.0",
     "@types/node": "24.10.1",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",

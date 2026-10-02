@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "id": "idle_double_blink",
+  "name": "Fino Idle – Doppelblinzeln",
+  "basePose": "fino_standing_neutral.png",
+  "faceRigVersion": 2,
+  "reactionState": "neutral",
+  "frames": [
+    {
+      "durationMs": 650,
+      "ops": [],
+      "face": {
+        "leftEye": {"state": "open", "x": 598, "y": 142, "width": 44, "height": 40},
+        "mouth": {"state": "neutral", "x": 686, "y": 170, "width": 116, "height": 78}
+      }
+    },
+    {
+      "durationMs": 70,
+      "ops": [],
+      "face": {
+        "leftEye": {"state": "half", "x": 598, "y": 142, "width": 47, "height": 46},
+        "mouth": {"state": "neutral", "x": 686, "y": 170, "width": 116, "height": 78}
+      }
+    },
+    {
+      "durationMs": 85,
+      "ops": [],
+      "face": {
+        "leftEye": {"state": "closed", "x": 598, "y": 142, "width": 57, "height": 33},
+        "mouth": {"state": "neutral", "x": 686, "y": 170, "width": 116, "height": 78}
+      }
+    },
+    {
+      "durationMs": 70,
+      "ops": [],
+      "face": {
+        "leftEye": {"state": "half", "x": 598, "y": 142, "width": 47, "height": 46},
+        "mouth": {"state": "neutral", "x": 686, "y": 170, "width": 116, "height": 78}
+      }
+    },
+    {
+      "durationMs": 160,
+      "ops": [],
+      "face": {
+        "leftEye": {"state": "open", "x": 598, "y": 142, "width": 44, "height": 40},
+        "mouth": {"state": "neutral", "x": 686, "y": 170, "width": 116, "height": 78}
+      }
+    },
+    {
+      "durationMs": 260,
+      "ops": [],
+      "face": {
+        "leftEye": {"state": "open", "x": 598, "y": 142, "width": 44, "height": 40},
+        "mouth": {"state": "neutral", "x": 686, "y": 170, "width": 116, "height": 78}
+      }
+    },
+    {
+      "durationMs": 70,
+      "ops": [],
+      "face": {
+        "leftEye": {"state": "half", "x": 598, "y": 142, "width": 47, "height": 46},
+        "mouth": {"state": "neutral", "x": 686, "y": 170, "width": 116, "height": 78}
+      }
+    },
+    {
+      "durationMs": 85,
+      "ops": [],
+      "face": {
+        "leftEye": {"state": "closed", "x": 598, "y": 142, "width": 57, "height": 33},
+        "mouth": {"state": "neutral", "x": 686, "y": 170, "width": 116, "height": 78}
+      }
+    },
+    {
+      "durationMs": 70,
+      "ops": [],
+      "face": {
+        "leftEye": {"state": "half", "x": 598, "y": 142, "width": 47, "height": 46},
+        "mouth": {"state": "neutral", "x": 686, "y": 170, "width": 116, "height": 78}
+      }
+    },
+    {
+      "durationMs": 700,
+      "ops": [],
+      "face": {
+        "leftEye": {"state": "open", "x": 598, "y": 142, "width": 44, "height": 40},
+        "mouth": {"state": "neutral", "x": 686, "y": 170, "width": 116, "height": 78}
+      }
+    }
+  ]
+}

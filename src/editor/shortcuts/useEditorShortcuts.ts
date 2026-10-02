@@ -6,8 +6,9 @@ const isTypingTarget = (target: EventTarget | null): boolean => {
   return Boolean(element?.closest('input, textarea, select, [contenteditable="true"]'));
 };
 
-export function useEditorShortcuts(): void {
+export function useEditorShortcuts(active = true): void {
   useEffect(() => {
+    if (!active) return;
     const handle = (event: KeyboardEvent) => {
       if (isTypingTarget(event.target)) return;
       const state = useEditorStore.getState();
@@ -31,5 +32,5 @@ export function useEditorShortcuts(): void {
     };
     window.addEventListener('keydown', handle);
     return () => window.removeEventListener('keydown', handle);
-  }, []);
+  }, [active]);
 }

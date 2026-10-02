@@ -10,3 +10,5 @@ android/build/
 live-update-output/
 .live-update-keys/
 *.pem
+test-results/
+playwright-report/

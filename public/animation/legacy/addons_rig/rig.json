@@ -1,0 +1,140 @@
+{
+  "version": 1,
+  "elements": {
+    "eyeLeft/open": {
+      "file": "eyes_left/fino_eyes_open.png",
+      "width": 44,
+      "height": 40,
+      "anchorX": 27,
+      "anchorY": 22,
+      "originX": 488,
+      "originY": 481
+    },
+    "eyeRight/open": {
+      "file": "eyes_right/fino_eyes_open.png",
+      "width": 27,
+      "height": 32,
+      "anchorX": 13,
+      "anchorY": 14,
+      "originX": 569,
+      "originY": 489
+    },
+    "eyeLeft/half": {
+      "file": "eyes_left/fino_eyes_half.png",
+      "width": 47,
+      "height": 46,
+      "anchorX": 34,
+      "anchorY": 16,
+      "originX": 481,
+      "originY": 487
+    },
+    "eyeRight/half": {
+      "file": "eyes_right/fino_eyes_half.png",
+      "width": 33,
+      "height": 39,
+      "anchorX": 19,
+      "anchorY": 5,
+      "originX": 563,
+      "originY": 498
+    },
+    "eyeLeft/closed": {
+      "file": "eyes_left/fino_eyes_closed.png",
+      "width": 57,
+      "height": 33,
+      "anchorX": 40,
+      "anchorY": 10,
+      "originX": 475,
+      "originY": 493
+    },
+    "eyeRight/closed": {
+      "file": "eyes_right/fino_eyes_closed.png",
+      "width": 33,
+      "height": 29,
+      "anchorX": 15,
+      "anchorY": 10,
+      "originX": 567,
+      "originY": 493
+    },
+    "eyeLeft/happy": {
+      "file": "eyes_left/fino_eyes_happy.png",
+      "width": 55,
+      "height": 30,
+      "anchorX": 42,
+      "anchorY": 10,
+      "originX": 473,
+      "originY": 493
+    },
+    "eyeRight/happy": {
+      "file": "eyes_right/fino_eyes_happy.png",
+      "width": 41,
+      "height": 30,
+      "anchorX": 23,
+      "anchorY": 16,
+      "originX": 559,
+      "originY": 487
+    },
+    "eyeLeft/surprised": {
+      "file": "eyes_left/fino_eyes_surprised.png",
+      "width": 49,
+      "height": 69,
+      "anchorX": 39,
+      "anchorY": 24,
+      "originX": 476,
+      "originY": 479
+    },
+    "eyeRight/surprised": {
+      "file": "eyes_right/fino_eyes_surprised.png",
+      "width": 27,
+      "height": 53,
+      "anchorX": 18,
+      "anchorY": 13,
+      "originX": 564,
+      "originY": 490
+    },
+    "mouth/neutral": {
+      "file": "mouths/fino_mouth_neutral.png",
+      "width": 173,
+      "height": 100,
+      "anchorX": 129,
+      "anchorY": 22,
+      "originX": 447,
+      "originY": 466
+    },
+    "mouth/smile": {
+      "file": "mouths/fino_mouth_smile.png",
+      "width": 160,
+      "height": 91,
+      "anchorX": 129,
+      "anchorY": 21,
+      "originX": 447,
+      "originY": 467
+    },
+    "mouth/open": {
+      "file": "mouths/fino_mouth_open.png",
+      "width": 158,
+      "height": 154,
+      "anchorX": 105,
+      "anchorY": 54,
+      "originX": 471,
+      "originY": 434
+    },
+    "mouth/chew": {
+      "file": "mouths/fino_mouth_chew.png",
+      "width": 134,
+      "height": 89,
+      "anchorX": 93,
+      "anchorY": 9,
+      "originX": 483,
+      "originY": 479
+    },
+    "mouth/sad": {
+      "file": "mouths/fino_mouth_sad.png",
+      "width": 125,
+      "height": 93,
+      "anchorX": 88,
+      "anchorY": 13,
+      "originX": 488,
+      "originY": 475
+    }
+  }
+}

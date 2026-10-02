@@ -8,6 +8,11 @@ The editor provides a lightweight browser-based workspace for building reusable 
 
 Assets and editor data are handled locally and can be stored using JSON.
 
+The app now starts with an editor launcher. Choose **Asset Editor** for the existing 3D tools,
+or **Animation Builder** for Raster128 pixel animation and the compatible Legacy1024 editor.
+Both use the same desktop/Android app and update infrastructure.
+See [Animation Builder migration and validation](docs/animation-builder-migration.md).
+
 ---
 
 ## ✨ Features

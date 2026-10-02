@@ -1,0 +1,352 @@
+{
+  "version": 2,
+  "rigRoot": "addons_rig_v2",
+  "baseRoot": "basis_face_base",
+  "strategy": "face_base_plus_mouth_only",
+  "sources": {
+    "faceBases": "basis/",
+    "eyes": "addons_rig/eyes_left + eyes_right",
+    "mouthOnly": "addons_normalized/mouths/"
+  },
+  "muzzleVariant": false,
+  "faceBases": {
+    "fino_standing_neutral.png": {
+      "file": "fino_standing_neutral.png",
+      "source": "basis/fino_standing_neutral.png",
+      "eyeWindows": [
+        {
+          "x": 570,
+          "y": 115,
+          "width": 62,
+          "height": 64,
+          "fillSample": {
+            "x": 560,
+            "y": 135
+          }
+        }
+      ],
+      "mouthWindow": {
+        "x": 610,
+        "y": 190,
+        "width": 122,
+        "height": 48,
+        "fillSample": {
+          "x": 640,
+          "y": 185
+        }
+      }
+    },
+    "fino_standing_active.png": {
+      "file": "fino_standing_active.png",
+      "source": "basis/fino_standing_active.png",
+      "eyeWindows": [
+        {
+          "x": 562,
+          "y": 82,
+          "width": 66,
+          "height": 68,
+          "fillSample": {
+            "x": 550,
+            "y": 110
+          }
+        }
+      ],
+      "mouthWindow": {
+        "x": 598,
+        "y": 158,
+        "width": 120,
+        "height": 76,
+        "fillSample": {
+          "x": 610,
+          "y": 150
+        }
+      }
+    },
+    "fino_sitting_relaxed.png": {
+      "file": "fino_sitting_relaxed.png",
+      "source": "basis/fino_sitting_relaxed.png",
+      "eyeWindows": [
+        {
+          "x": 588,
+          "y": 224,
+          "width": 64,
+          "height": 64,
+          "fillSample": {
+            "x": 575,
+            "y": 250
+          }
+        }
+      ],
+      "mouthWindow": {
+        "x": 618,
+        "y": 294,
+        "width": 120,
+        "height": 52,
+        "fillSample": {
+          "x": 640,
+          "y": 290
+        }
+      }
+    },
+    "fino_sleeping.png": {
+      "file": "fino_sleeping.png",
+      "source": "basis/fino_sleeping.png",
+      "eyeWindows": [
+        {
+          "x": 690,
+          "y": 486,
+          "width": 82,
+          "height": 64,
+          "fillSample": {
+            "x": 680,
+            "y": 500
+          }
+        }
+      ],
+      "mouthWindow": {
+        "x": 752,
+        "y": 614,
+        "width": 128,
+        "height": 60,
+        "fillSample": {
+          "x": 750,
+          "y": 600
+        }
+      }
+    },
+    "fino_reading.png": {
+      "file": "fino_reading.png",
+      "source": "basis/fino_reading.png",
+      "eyeWindows": [
+        {
+          "x": 574,
+          "y": 218,
+          "width": 82,
+          "height": 82,
+          "fillSample": {
+            "x": 560,
+            "y": 250
+          }
+        },
+        {
+          "x": 716,
+          "y": 240,
+          "width": 64,
+          "height": 70,
+          "fillSample": {
+            "x": 700,
+            "y": 255
+          }
+        }
+      ],
+      "mouthWindow": {
+        "x": 628,
+        "y": 336,
+        "width": 154,
+        "height": 52,
+        "fillSample": {
+          "x": 650,
+          "y": 330
+        }
+      }
+    },
+    "fino_eating.png": {
+      "file": "fino_eating.png",
+      "source": "basis/fino_eating.png",
+      "eyeWindows": [
+        {
+          "x": 548,
+          "y": 78,
+          "width": 72,
+          "height": 70,
+          "fillSample": {
+            "x": 530,
+            "y": 100
+          }
+        }
+      ],
+      "mouthWindow": {
+        "x": 582,
+        "y": 136,
+        "width": 126,
+        "height": 72,
+        "fillSample": {
+          "x": 600,
+          "y": 130
+        }
+      }
+    }
+  },
+  "elements": {
+    "eyeLeft/open": {
+      "file": "eyes_left/fino_eyes_open.png",
+      "width": 44,
+      "height": 40,
+      "anchorX": 27,
+      "anchorY": 22,
+      "originX": 488,
+      "originY": 481
+    },
+    "eyeLeft/half": {
+      "file": "eyes_left/fino_eyes_half.png",
+      "width": 47,
+      "height": 46,
+      "anchorX": 34,
+      "anchorY": 16,
+      "originX": 481,
+      "originY": 487
+    },
+    "eyeLeft/closed": {
+      "file": "eyes_left/fino_eyes_closed.png",
+      "width": 57,
+      "height": 33,
+      "anchorX": 40,
+      "anchorY": 10,
+      "originX": 475,
+      "originY": 493
+    },
+    "eyeLeft/happy": {
+      "file": "eyes_left/fino_eyes_happy.png",
+      "width": 55,
+      "height": 30,
+      "anchorX": 42,
+      "anchorY": 10,
+      "originX": 473,
+      "originY": 493
+    },
+    "eyeLeft/surprised": {
+      "file": "eyes_left/fino_eyes_surprised.png",
+      "width": 49,
+      "height": 69,
+      "anchorX": 39,
+      "anchorY": 24,
+      "originX": 476,
+      "originY": 479
+    },
+    "eyeRight/open": {
+      "file": "eyes_right/fino_eyes_open.png",
+      "width": 27,
+      "height": 32,
+      "anchorX": 13,
+      "anchorY": 14,
+      "originX": 569,
+      "originY": 489
+    },
+    "eyeRight/half": {
+      "file": "eyes_right/fino_eyes_half.png",
+      "width": 33,
+      "height": 39,
+      "anchorX": 19,
+      "anchorY": 5,
+      "originX": 563,
+      "originY": 498
+    },
+    "eyeRight/closed": {
+      "file": "eyes_right/fino_eyes_closed.png",
+      "width": 33,
+      "height": 29,
+      "anchorX": 15,
+      "anchorY": 10,
+      "originX": 567,
+      "originY": 493
+    },
+    "eyeRight/happy": {
+      "file": "eyes_right/fino_eyes_happy.png",
+      "width": 41,
+      "height": 30,
+      "anchorX": 23,
+      "anchorY": 16,
+      "originX": 559,
+      "originY": 487
+    },
+    "eyeRight/surprised": {
+      "file": "eyes_right/fino_eyes_surprised.png",
+      "width": 27,
+      "height": 53,
+      "anchorX": 18,
+      "anchorY": 13,
+      "originX": 564,
+      "originY": 490
+    },
+    "mouth/neutral": {
+      "file": "mouth_only/fino_mouth_neutral.png",
+      "width": 116,
+      "height": 78,
+      "anchorX": 72,
+      "anchorY": 0,
+      "originX": 504,
+      "originY": 488,
+      "source": "addons_normalized/mouths/fino_mouth_neutral.png",
+      "selectionWindow": {
+        "x": 494,
+        "y": 516,
+        "width": 148,
+        "height": 62
+      }
+    },
+    "mouth/smile": {
+      "file": "mouth_only/fino_mouth_smile.png",
+      "width": 102,
+      "height": 63,
+      "anchorX": 71,
+      "anchorY": 0,
+      "originX": 505,
+      "originY": 488,
+      "source": "addons_normalized/mouths/fino_mouth_smile.png",
+      "selectionWindow": {
+        "x": 494,
+        "y": 508,
+        "width": 148,
+        "height": 68
+      }
+    },
+    "mouth/open": {
+      "file": "mouth_only/fino_mouth_open.png",
+      "width": 134,
+      "height": 100,
+      "anchorX": 96,
+      "anchorY": 0,
+      "originX": 480,
+      "originY": 488,
+      "source": "addons_normalized/mouths/fino_mouth_open.png",
+      "selectionWindow": {
+        "x": 468,
+        "y": 500,
+        "width": 166,
+        "height": 96
+      }
+    },
+    "mouth/chew": {
+      "file": "mouth_only/fino_mouth_chew.png",
+      "width": 125,
+      "height": 70,
+      "anchorX": 84,
+      "anchorY": 0,
+      "originX": 492,
+      "originY": 488,
+      "source": "addons_normalized/mouths/fino_mouth_chew.png",
+      "selectionWindow": {
+        "x": 492,
+        "y": 506,
+        "width": 140,
+        "height": 76
+      }
+    },
+    "mouth/sad": {
+      "file": "mouth_only/fino_mouth_sad.png",
+      "width": 121,
+      "height": 72,
+      "anchorX": 84,
+      "anchorY": 0,
+      "originX": 492,
+      "originY": 488,
+      "source": "addons_normalized/mouths/fino_mouth_sad.png",
+      "selectionWindow": {
+        "x": 492,
+        "y": 506,
+        "width": 140,
+        "height": 78
+      }
+    }
+  }
+}
