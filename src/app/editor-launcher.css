@@ -1,4 +1,125 @@
 .asset-editor-host {
   /* Keep App's percentage height connected to the dimensioned root. */
   height: 100%;
+  --editor-return-panel-clearance: 190px;
+}
+
+.asset-editor-host:has(.workspace.hierarchy-collapsed) {
+  --editor-return-panel-clearance: 44px;
+}
+
+.animation-editor-host {
+  position: relative;
+  width: 100vw;
+  height: 100dvh;
+  min-width: 0;
+  min-height: 0;
+  --editor-return-panel-clearance: 0px;
+}
+
+.animation-editor-host:has(.ab-timeline) {
+  --editor-return-panel-clearance: 115px;
+}
+
+.animation-editor-host .animation-builder {
+  width: 100%;
+  height: 100%;
+}
+
+.editor-return-control {
+  position: fixed;
+  bottom: calc(var(--status-height, 28px) + var(--editor-return-panel-clearance, 0px) + 8px);
+  left: 12px;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #eee;
+  font: 13px system-ui, sans-serif;
+}
+
+.editor-return-control button {
+  min-height: 36px;
+  border: 1px solid #666779;
+  border-radius: 6px;
+  background: #292b3b;
+  color: inherit;
+  box-shadow: 0 2px 8px #0006;
+  cursor: pointer;
+}
+
+.editor-return-action {
+  padding: 0 11px;
+}
+
+.editor-return-toggle {
+  width: 30px;
+  padding: 0;
+  font-size: 16px;
+}
+
+.editor-return-control button:hover {
+  background: #3a3b50;
+}
+
+.editor-return-control button:focus-visible {
+  outline: 2px solid #a997c7;
+  outline-offset: 2px;
+}
+
+.editor-return-control.is-collapsed .editor-return-toggle {
+  width: 36px;
+  height: 36px;
+  background: #292b3bdb;
+  opacity: 0.82;
+}
+
+@media (max-width: 1180px), (pointer: coarse) and (max-width: 1400px) {
+  .asset-editor-host {
+    --editor-return-panel-clearance: 210px;
+  }
+
+  .asset-editor-host:has(.workspace.hierarchy-collapsed) {
+    --editor-return-panel-clearance: 44px;
+  }
+
+  .editor-return-control button {
+    min-height: 44px;
+  }
+
+  .editor-return-toggle {
+    width: 38px;
+  }
+
+  .editor-return-control.is-collapsed .editor-return-toggle {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (max-width: 820px) {
+  .asset-editor-host {
+    --editor-return-panel-clearance: 230px;
+  }
+
+  .asset-editor-host:has(.workspace.hierarchy-collapsed) {
+    --editor-return-panel-clearance: 44px;
+  }
+}
+
+@media (max-height: 700px) and (max-width: 1180px),
+  (max-height: 700px) and (pointer: coarse) and (max-width: 1400px) {
+  .asset-editor-host {
+    --editor-return-panel-clearance: 165px;
+  }
+
+  .asset-editor-host:has(.workspace.hierarchy-collapsed) {
+    --editor-return-panel-clearance: 44px;
+  }
+}
+
+@media (max-width: 600px) {
+  .editor-return-control {
+    left: 6px;
+  }
 }

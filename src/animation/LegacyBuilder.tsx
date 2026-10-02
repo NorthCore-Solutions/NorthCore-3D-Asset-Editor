@@ -34,7 +34,7 @@ const text = (data: FormData, key: string) => {
   return typeof v === 'string' ? v : '';
 };
 const num = (data: FormData, key: string) => Number(text(data, key));
-export function LegacyBuilder({ onExit, onNative }: { onExit: () => void; onNative: () => void }) {
+export function LegacyBuilder({ onNative }: { onNative: () => void }) {
   useSyncExternalStore(store.subscribe, store.snapshot);
   const [modal, setModal] = useState<Modal | null>(null);
   const [left, setLeft] = useState(innerWidth > 1100),
@@ -259,7 +259,6 @@ export function LegacyBuilder({ onExit, onNative }: { onExit: () => void; onNati
   return (
     <div className="animation-builder">
       <header className="ab-menubar">
-        <button onClick={onExit}>‹ Auswahl</button>
         {menu(
           'Datei',
           <>

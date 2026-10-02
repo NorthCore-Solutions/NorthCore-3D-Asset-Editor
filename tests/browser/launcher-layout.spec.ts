@@ -13,6 +13,8 @@ async function expectFullAssetLayout(page: Page) {
     const root = document.querySelector('#root')!.getBoundingClientRect();
     const shell = document.querySelector('.app-shell')!.getBoundingClientRect();
     const workspace = document.querySelector('.workspace')!.getBoundingClientRect();
+    const returnControl = document.querySelector('.asset-editor-host .editor-return-control')!.getBoundingClientRect();
+    const hierarchy = document.querySelector('.workspace > .hierarchy')!.getBoundingClientRect();
     const viewport = document.querySelector('.viewport')?.getBoundingClientRect();
     const canvas = document.querySelector<HTMLCanvasElement>('.viewport canvas');
     const top = document.querySelector('.topbar')!.getBoundingClientRect().height;
@@ -24,7 +26,9 @@ async function expectFullAssetLayout(page: Page) {
       && workspace.height > 200
       && viewport?.height === workspace.height
       && !!canvas && canvas.width > 300 && canvas.height > 150
-      && Math.abs(canvas.getBoundingClientRect().height - workspace.height) < 1;
+      && Math.abs(canvas.getBoundingClientRect().height - workspace.height) < 1
+      && returnControl.left >= 0
+      && returnControl.bottom <= hierarchy.top + 1;
   }), { timeout: 5000 }).toBe(true);
 }
 
@@ -73,8 +77,14 @@ test('layout survives resizing and editor switches with hidden host and remounte
   await expect(page.getByLabel('Raster128 Zeichenfläche')).toBeVisible();
   expect(await page.locator('.animation-builder').evaluate((el) =>
     Math.abs(el.getBoundingClientRect().height - innerHeight) < 1)).toBe(true);
+  await expect(page.locator('.ab-menubar > :first-child')).toHaveClass(/ab-menu/);
+  await expect(page.locator('.ab-menubar button[title="Zur Editor-Auswahl"]')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '‹ Editor-Auswahl', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Editor-Auswahl einklappen' }).click();
+  await expect(page.getByRole('button', { name: '‹ Editor-Auswahl', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Editor-Auswahl einblenden' }).click();
   await expect(page.locator('.app-shell')).toBeHidden();
-  await page.getByRole('button', { name: '‹ Auswahl', exact: true }).click();
+  await page.getByRole('button', { name: '‹ Editor-Auswahl', exact: true }).click();
   await openAssetEditor(page);
   await expectFullAssetLayout(page);
   await page.setViewportSize({ width: 1440, height: 1000 });

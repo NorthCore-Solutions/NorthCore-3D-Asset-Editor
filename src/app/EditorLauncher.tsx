@@ -4,6 +4,7 @@ import { useEditorStore } from '../store/editorStore';
 import { animationStore } from '../animation/store';
 import { legacyStore } from '../animation/legacyStore';
 import { Dialog } from '../animation/Dialog';
+import { EditorReturnControl } from './EditorReturnControl';
 import '../animation/builder.css';
 import './editor-launcher.css';
 
@@ -15,6 +16,7 @@ export function EditorLauncher() {
   const [editor, setEditor] = useState<'asset' | 'animation' | null>(null);
   const [exitOpen, setExitOpen] = useState(false);
   const [assetVisited, setAssetVisited] = useState(false);
+  const [returnCollapsed, setReturnCollapsed] = useState(false);
   useEffect(() => {
     void initializeLiveUpdates();
   }, []);
@@ -39,13 +41,22 @@ export function EditorLauncher() {
         {assetVisited && (
           <div className="asset-editor-host" hidden={editor !== 'asset'}>
             <AssetEditor active={editor === 'asset'} />
-            <button className="asset-return" onClick={exit}>
-              ‹ Editor-Auswahl
-            </button>
+            <EditorReturnControl
+              collapsed={returnCollapsed}
+              onToggle={() => setReturnCollapsed((value) => !value)}
+              onExit={exit}
+            />
           </div>
         )}
         {editor === 'animation' ? (
-          <AnimationBuilder onExit={exit} />
+          <div className="animation-editor-host">
+            <AnimationBuilder />
+            <EditorReturnControl
+              collapsed={returnCollapsed}
+              onToggle={() => setReturnCollapsed((value) => !value)}
+              onExit={exit}
+            />
+          </div>
         ) : (
           editor === null && (
             <main className="editor-launcher">

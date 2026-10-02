@@ -42,7 +42,7 @@ const textField = (data: FormData, name: string) => {
   return typeof value === 'string' ? value : '';
 };
 const number = (data: FormData, name: string) => Number(data.get(name));
-export function AnimationBuilder({ onExit, onLegacy }: { onExit: () => void; onLegacy: () => void }) {
+export function AnimationBuilder({ onLegacy }: { onLegacy: () => void }) {
   useSyncExternalStore(store.subscribe, store.snapshot);
   const [modal, setModal] = useState<Modal | null>(null);
   const [left, setLeft] = useState(() => innerWidth > 1100);
@@ -272,9 +272,6 @@ export function AnimationBuilder({ onExit, onLegacy }: { onExit: () => void; onL
   return (
     <div className="animation-builder">
       <header className="ab-menubar">
-        <button title="Zur Editor-Auswahl" onClick={onExit}>
-          ‹ Auswahl
-        </button>
         {menu(
           'Datei',
           <>

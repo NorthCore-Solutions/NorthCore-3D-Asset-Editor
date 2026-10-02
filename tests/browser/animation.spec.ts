@@ -112,7 +112,7 @@ test('native mouse strokes, history, sizes, exact picker, exclusive face/templat
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
   expect((await state(page)).pixels).not.toHaveLength(0);
-  await page.getByRole('button', { name: '‹ Auswahl', exact: true }).click();
+  await page.getByRole('button', { name: '‹ Editor-Auswahl', exact: true }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Zur Auswahl', exact: true }).click();
   await page
     .getByRole('button', {
@@ -122,6 +122,38 @@ test('native mouse strokes, history, sizes, exact picker, exclusive face/templat
   expect((await state(page)).faces).toBe(1);
   expect((await state(page)).templates).toBe(1);
   expect(errors).toEqual([]);
+});
+
+test('shared editor return control toggles on native and Legacy1024 with a flush-left menu', async ({
+  page,
+}) => {
+  await launch(page);
+  const returnButton = page.getByRole('button', { name: '‹ Editor-Auswahl', exact: true });
+  await expect(returnButton).toBeVisible();
+  await expect(page.locator('.ab-menubar > :first-child')).toHaveClass(/ab-menu/);
+  await expect(page.locator('.ab-menubar button[title="Zur Editor-Auswahl"]')).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Editor-Auswahl einklappen' }).click();
+  await expect(returnButton).toHaveCount(0);
+  await page.getByRole('button', { name: 'Editor-Auswahl einblenden' }).click();
+  await expect(returnButton).toBeVisible();
+
+  await page.setViewportSize({ width: 820, height: 1180 });
+  await page.getByRole('button', { name: 'Legacy 1024' }).click();
+  await expect(page.getByLabel('Legacy Zeichenfläche 1024')).toBeVisible();
+  await expect(page.getByRole('button', { name: '‹ Editor-Auswahl', exact: true })).toBeVisible();
+  await expect(page.locator('.ab-menubar > :first-child')).toHaveClass(/ab-menu/);
+  await expect(page.locator('.ab-menubar button[title="Zur Editor-Auswahl"]')).toHaveCount(0);
+  const returnBounds = (await page.locator('.editor-return-control').boundingBox())!;
+  const timelineBounds = (await page.locator('.ab-timeline').boundingBox())!;
+  expect(returnBounds.x).toBeGreaterThanOrEqual(0);
+  expect(returnBounds.y + returnBounds.height).toBeLessThanOrEqual(timelineBounds.y);
+  expect(await page.getByRole('button', { name: 'Editor-Auswahl einklappen' }).evaluate((el) =>
+    el.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
+  await page.getByRole('button', { name: 'Editor-Auswahl einklappen' }).click();
+  await expect(page.getByRole('button', { name: 'Editor-Auswahl einblenden' })).toBeVisible();
+  await page.getByRole('button', { name: 'Editor-Auswahl einblenden' }).click();
+  await expect(page.getByRole('button', { name: '‹ Editor-Auswahl', exact: true })).toBeVisible();
 });
 
 test('reference original RGBA, wheel anchor and editor-only export', async ({ page }) => {
@@ -304,6 +336,9 @@ test('existing 3D editor creates geometry and retains dirty project on return', 
     })
     .click();
   await expect(page.locator('.app-shell')).toBeVisible();
+  await page.getByRole('button', { name: 'Editor-Auswahl einklappen' }).click();
+  await expect(page.getByRole('button', { name: '‹ Editor-Auswahl', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Editor-Auswahl einblenden' }).click();
   const count = async () =>
     page.evaluate(async () => {
       const p = '/src/store/editorStore.ts';
@@ -330,7 +365,7 @@ test('existing 3D editor creates geometry and retains dirty project on return', 
     .click();
   await page.keyboard.press('Control+z');
   expect(await count()).toBe(initial + 1);
-  await page.getByRole('button', { name: '‹ Auswahl', exact: true }).click();
+  await page.getByRole('button', { name: '‹ Editor-Auswahl', exact: true }).click();
   await page
     .getByRole('button', {
       name: 'Asset Editor 3D-Objekte gestalten und exportieren',

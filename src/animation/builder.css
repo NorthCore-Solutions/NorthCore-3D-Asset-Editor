@@ -421,17 +421,6 @@
   color: #b9bdd0;
   margin-top: 12px;
 }
-.asset-return {
-  position: fixed;
-  bottom: 27px;
-  left: 12px;
-  z-index: 50;
-  background: #313346;
-  color: #eee;
-  border: 1px solid #666;
-  border-radius: 5px;
-  padding: 7px;
-}
 @media (max-width: 1100px) {
   .animation-builder {
     --ab-left: 220px;
@@ -496,7 +485,7 @@
   width: 100vw;
 }
 #root:has(> .editor-launcher),
-#root:has(> .animation-builder) {
+#root:has(> .animation-editor-host) {
   min-width: 0;
   min-height: 0;
 }

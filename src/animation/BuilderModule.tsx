@@ -3,13 +3,13 @@ import { AnimationBuilder } from './AnimationBuilder';
 const LegacyBuilder = lazy(() =>
   import('./LegacyBuilder').then((module) => ({ default: module.LegacyBuilder }))
 );
-export function BuilderModule({ onExit }: { onExit: () => void }) {
+export function BuilderModule() {
   const [legacy, setLegacy] = useState(false);
   return legacy ? (
     <Suspense fallback={<div className="editor-launcher">Legacy-Builder wird geladen …</div>}>
-      <LegacyBuilder onExit={onExit} onNative={() => setLegacy(false)} />
+      <LegacyBuilder onNative={() => setLegacy(false)} />
     </Suspense>
   ) : (
-    <AnimationBuilder onExit={onExit} onLegacy={() => setLegacy(true)} />
+    <AnimationBuilder onLegacy={() => setLegacy(true)} />
   );
 }
