@@ -22,7 +22,7 @@ const isCompactWorkspace = (): boolean =>
   && typeof window.matchMedia === 'function'
   && window.matchMedia(TABLET_MEDIA_QUERY).matches;
 
-export function App({ active = true }: { active?: boolean }) {
+export function App({ active = true, onOpenEditorMenu }: { active?: boolean; onOpenEditorMenu?: () => void }) {
   useEditorShortcuts(active);
   const objects = useEditorStore((state) => state.objects);
   const project = useEditorStore((state) => state.project);
@@ -89,7 +89,7 @@ export function App({ active = true }: { active?: boolean }) {
 
   return (
     <div className="app-shell">
-      <TopBar />
+      <TopBar onOpenEditorMenu={onOpenEditorMenu} />
       <EditorToolbar />
       <main className={workspaceClassName}>
         <ShapesPanel collapsed={inventoryCollapsed} onToggle={toggleInventory} />

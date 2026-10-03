@@ -1,3 +1,4 @@
+import { CollapseChevron } from '../layout/CollapseChevron';
 import { useEditorStore } from '../../store/editorStore';
 
 interface HierarchyPanelProps {
@@ -36,7 +37,7 @@ export function HierarchyPanel({ collapsed, onToggle }: HierarchyPanelProps) {
             aria-label={collapsed ? 'Objektliste einblenden' : 'Objektliste ausblenden'}
             title={collapsed ? 'Objektliste einblenden' : 'Objektliste ausblenden'}
           >
-            {collapsed ? '⌃' : '⌄'}
+            <CollapseChevron direction={collapsed ? 'up' : 'down'} />
           </button>
         </div>
       </div>

@@ -146,6 +146,8 @@
   letter-spacing: 0;
 }
 
+.panel-collapse-button > svg { display: block; }
+
 .panel-collapse-button:hover {
   border-color: var(--border-strong);
   background: var(--panel-hover);
@@ -201,7 +203,7 @@
   left: 0;
   height: 32px;
   min-height: 32px;
-  border-bottom: 0;
+  border-bottom: 1px solid var(--border);
 }
 
 .workspace.hierarchy-collapsed .hierarchy-actions {

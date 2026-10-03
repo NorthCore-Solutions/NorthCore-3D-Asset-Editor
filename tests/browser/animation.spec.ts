@@ -14,6 +14,10 @@ async function launch(page: Page) {
     .click();
   await expect(page.getByLabel('Raster128 Zeichenfläche')).toBeVisible();
 }
+async function returnToLauncher(page: Page) {
+  await page.getByRole('button', { name: 'Menü öffnen' }).click();
+  await page.locator('.editor-menu-dialog').getByRole('button', { name: 'Zur Editor-Auswahl' }).click();
+}
 async function state(page: Page) {
   return page.evaluate(async () => {
     const path = '/src/animation/store.ts';
@@ -107,12 +111,12 @@ test('native mouse strokes, history, sizes, exact picker, exclusive face/templat
   await page.getByRole('dialog').getByLabel('RGBA Hex').fill('#12345601');
   await page.getByRole('dialog').getByLabel('RGBA Hex').press('Enter');
   expect((await state(page)).color).toBe(0x12345601);
-  await page.getByTitle('Neue Animation', { exact: true }).click();
+  await page.locator('.ab-toolbar').getByTitle('Neue Animation', { exact: true }).click();
   await page.getByRole('dialog').getByLabel('Name', { exact: true }).fill('Abbrechen');
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
   expect((await state(page)).pixels).not.toHaveLength(0);
-  await page.getByRole('button', { name: '‹ Editor-Auswahl', exact: true }).click();
+  await returnToLauncher(page);
   await page.getByRole('dialog').getByRole('button', { name: 'Zur Auswahl', exact: true }).click();
   await page
     .getByRole('button', {
@@ -124,36 +128,34 @@ test('native mouse strokes, history, sizes, exact picker, exclusive face/templat
   expect(errors).toEqual([]);
 });
 
-test('shared editor return control toggles on native and Legacy1024 with a flush-left menu', async ({
+test('editor hamburger menu opens and closes on native and Legacy1024', async ({
   page,
 }) => {
   await launch(page);
-  const returnButton = page.getByRole('button', { name: '‹ Editor-Auswahl', exact: true });
-  await expect(returnButton).toBeVisible();
-  await expect(page.locator('.ab-menubar > :first-child')).toHaveClass(/ab-menu/);
-  await expect(page.locator('.ab-menubar button[title="Zur Editor-Auswahl"]')).toHaveCount(0);
-
-  await page.getByRole('button', { name: 'Editor-Auswahl einklappen' }).click();
-  await expect(returnButton).toHaveCount(0);
-  await page.getByRole('button', { name: 'Editor-Auswahl einblenden' }).click();
-  await expect(returnButton).toBeVisible();
+  const trigger = page.getByRole('button', { name: 'Menü öffnen' });
+  await expect(trigger).toBeVisible();
+  await expect(page.locator('.editor-return-control')).toHaveCount(0);
+  await expect(page.locator('.ab-main-menus > :first-child')).toHaveClass(/ab-menu/);
+  await trigger.click();
+  await expect(page.getByRole('dialog', { name: 'Menü' })).toBeVisible();
+  await page.mouse.click(8, 8);
+  await expect(page.getByRole('dialog', { name: 'Menü' })).toHaveCount(0);
+  await trigger.click();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: 'Menü' })).toHaveCount(0);
+  await trigger.click();
+  await page.getByRole('button', { name: 'Fortsetzen' }).click();
+  await expect(page.getByRole('dialog', { name: 'Menü' })).toHaveCount(0);
 
   await page.setViewportSize({ width: 820, height: 1180 });
-  await page.getByRole('button', { name: 'Legacy 1024' }).click();
+  await page.getByLabel('Editor-Modus', { exact: true }).selectOption('legacy1024');
   await expect(page.getByLabel('Legacy Zeichenfläche 1024')).toBeVisible();
-  await expect(page.getByRole('button', { name: '‹ Editor-Auswahl', exact: true })).toBeVisible();
-  await expect(page.locator('.ab-menubar > :first-child')).toHaveClass(/ab-menu/);
-  await expect(page.locator('.ab-menubar button[title="Zur Editor-Auswahl"]')).toHaveCount(0);
-  const returnBounds = (await page.locator('.editor-return-control').boundingBox())!;
-  const timelineBounds = (await page.locator('.ab-timeline').boundingBox())!;
-  expect(returnBounds.x).toBeGreaterThanOrEqual(0);
-  expect(returnBounds.y + returnBounds.height).toBeLessThanOrEqual(timelineBounds.y);
-  expect(await page.getByRole('button', { name: 'Editor-Auswahl einklappen' }).evaluate((el) =>
-    el.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
-  await page.getByRole('button', { name: 'Editor-Auswahl einklappen' }).click();
-  await expect(page.getByRole('button', { name: 'Editor-Auswahl einblenden' })).toBeVisible();
-  await page.getByRole('button', { name: 'Editor-Auswahl einblenden' }).click();
-  await expect(page.getByRole('button', { name: '‹ Editor-Auswahl', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Menü öffnen' })).toBeVisible();
+  await expect(page.locator('.ab-main-menus > :first-child')).toHaveClass(/ab-menu/);
+  await page.getByRole('button', { name: 'Menü öffnen' }).click();
+  await expect(page.getByRole('dialog', { name: 'Menü' })).toBeVisible();
+  await page.getByRole('button', { name: 'Fortsetzen' }).click();
+  expect(await page.locator('.ab-menubar').evaluate((el) => el.getBoundingClientRect().height)).toBeLessThanOrEqual(48);
 });
 
 test('reference original RGBA, wheel anchor and editor-only export', async ({ page }) => {
@@ -188,7 +190,7 @@ test('reference original RGBA, wheel anchor and editor-only export', async ({ pa
   expect(sampled.commits).toBe(1);
   await page.screenshot({ path: 'test-results/reference-desktop.png' });
   const download = page.waitForEvent('download');
-  await page.getByTitle('PNG exportieren', { exact: true }).click();
+  await menu(page, 'Datei', 'Frame als PNG exportieren (1024×1024)');
   expect((await download).suggestedFilename()).toContain('1024.png');
 });
 
@@ -238,7 +240,7 @@ test('legacy loads with original rigs and retains frames across switching', asyn
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await launch(page);
-  await page.getByRole('button', { name: 'Legacy 1024' }).click();
+  await page.getByLabel('Editor-Modus', { exact: true }).selectOption('legacy1024');
   await expect(page.getByLabel('Legacy Zeichenfläche 1024')).toBeVisible();
   await expect
     .poll(() =>
@@ -254,22 +256,22 @@ test('legacy loads with original rigs and retains frames across switching', asyn
       })
     )
     .toBe(true);
-  await page.getByTitle('Neue Animation', { exact: true }).click();
+  await page.locator('.ab-toolbar').getByTitle('Neue Animation', { exact: true }).click();
   await page.getByRole('dialog').getByLabel('Start').selectOption('preset');
   await page.getByRole('dialog').getByLabel('Name', { exact: true }).press('Enter');
   await expect(page.getByText('Face-Rig V2', { exact: true })).toBeVisible();
   await page.getByTitle('Frame duplizieren', { exact: true }).click();
-  await page.getByRole('button', { name: 'Raster128', exact: true }).click();
-  await page.getByRole('button', { name: 'Legacy 1024' }).click();
+  await page.getByLabel('Editor-Modus', { exact: true }).selectOption('raster128');
+  await page.getByLabel('Editor-Modus', { exact: true }).selectOption('legacy1024');
   await expect(page.getByRole('button', { name: 'Frame 2 400 ms', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'idle_breathing.finoanim.json', exact: true }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Abbrechen', exact: true }).focus();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.locator('.ab-title')).not.toHaveText('Neue Animation');
-  await page.getByLabel('Arbeitsbereich', { exact: true }).selectOption('Pixel');
+  await page.getByRole('combobox', { name: 'Arbeitsbereich', exact: true }).selectOption('Pixel');
   await expect(page.getByTitle('Information: Gesicht', { exact: true })).toHaveCount(0);
-  await page.getByLabel('Arbeitsbereich', { exact: true }).selectOption('Kombiniert');
+  await page.getByRole('combobox', { name: 'Arbeitsbereich', exact: true }).selectOption('Kombiniert');
   await expect(page.getByTitle('Information: Gesicht', { exact: true })).toBeVisible();
   await page.screenshot({ path: 'test-results/legacy.png' });
   expect(errors).toEqual([]);
@@ -336,9 +338,11 @@ test('existing 3D editor creates geometry and retains dirty project on return', 
     })
     .click();
   await expect(page.locator('.app-shell')).toBeVisible();
-  await page.getByRole('button', { name: 'Editor-Auswahl einklappen' }).click();
-  await expect(page.getByRole('button', { name: '‹ Editor-Auswahl', exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Editor-Auswahl einblenden' }).click();
+  await expect(page.getByRole('button', { name: 'Menü öffnen' })).toBeVisible();
+  await expect(page.locator('.editor-return-control')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Menü öffnen' }).click();
+  await expect(page.getByRole('dialog', { name: 'Menü' })).toBeVisible();
+  await page.getByRole('button', { name: 'Fortsetzen' }).click();
   const count = async () =>
     page.evaluate(async () => {
       const p = '/src/store/editorStore.ts';
@@ -356,7 +360,7 @@ test('existing 3D editor creates geometry and retains dirty project on return', 
     .first()
     .click();
   await expect.poll(count).toBe(initial + 1);
-  await page.getByRole('button', { name: '‹ Editor-Auswahl', exact: true }).click();
+  await returnToLauncher(page);
   await page.getByRole('dialog').getByRole('button', { name: 'Zur Auswahl', exact: true }).click();
   await page
     .getByRole('button', {
@@ -365,7 +369,7 @@ test('existing 3D editor creates geometry and retains dirty project on return', 
     .click();
   await page.keyboard.press('Control+z');
   expect(await count()).toBe(initial + 1);
-  await page.getByRole('button', { name: '‹ Editor-Auswahl', exact: true }).click();
+  await returnToLauncher(page);
   await page
     .getByRole('button', {
       name: 'Asset Editor 3D-Objekte gestalten und exportieren',

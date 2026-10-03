@@ -49,7 +49,7 @@ export function Dialog({
         }}
       >
         <h2>{title}</h2>
-        {children}
+        <div className="ab-dialog-body">{children}</div>
         <footer>
           <button type="button" onClick={onCancel}>
             Abbrechen

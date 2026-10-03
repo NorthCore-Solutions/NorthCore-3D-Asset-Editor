@@ -1,3 +1,4 @@
+import { CollapseChevron } from '../layout/CollapseChevron';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MATERIAL_PRESETS } from '../../materials/presets';
 import { createGeometry } from '../../geometry/factory';
@@ -98,7 +99,7 @@ function PropertiesHeader({ collapsed, onToggle }: PropertiesPanelProps) {
         aria-label={collapsed ? 'Eigenschaften einblenden' : 'Eigenschaften ausblenden'}
         title={collapsed ? 'Eigenschaften einblenden' : 'Eigenschaften ausblenden'}
       >
-        {collapsed ? '‹' : '›'}
+        <CollapseChevron direction={collapsed ? 'left' : 'right'} />
       </button>
     </div>
   );

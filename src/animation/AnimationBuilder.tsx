@@ -1,5 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import type { ReactNode } from 'react';
+import { BuilderHeader, BuilderMenu, BuilderPanel, FitIcon, InspectorSection, LibraryTabs, SelectionIcon, ToolGroup } from './BuilderUI';
+import { useBuilderPanels } from './useBuilderPanels';
 import { animationStore as store } from './store';
 import type { Tool } from './store';
 import { SOURCES, capture, hex } from './raster';
@@ -34,20 +36,18 @@ const tools: [Tool, string, string][] = [
   ['eyedropper', '⚗', 'Pipette'],
   ['rect', '□', 'Rechteckauswahl'],
   ['polygon', '⬡', 'Polygonauswahl'],
-  ['pan', '✋', 'Ansicht verschieben'],
-  ['grab', '☝', 'Layer greifen'],
+  ['pan', '↔', 'Ansicht verschieben'],
+  ['grab', '◇', 'Layer greifen'],
 ];
 const textField = (data: FormData, name: string) => {
   const value = data.get(name);
   return typeof value === 'string' ? value : '';
 };
 const number = (data: FormData, name: string) => Number(data.get(name));
-export function AnimationBuilder({ onLegacy }: { onLegacy: () => void }) {
+export function AnimationBuilder({ onLegacy, onOpenEditorMenu }: { onLegacy: () => void; onOpenEditorMenu?: () => void }) {
   useSyncExternalStore(store.subscribe, store.snapshot);
   const [modal, setModal] = useState<Modal | null>(null);
-  const [left, setLeft] = useState(() => innerWidth > 1100);
-  const [right, setRight] = useState(() => innerWidth > 1100);
-  const [timeline, setTimeline] = useState(true);
+  const { left, right, timeline, setLeft, setRight, setTimeline } = useBuilderPanels();
   const [mode, setMode] = useState('Kombiniert');
   const [tab, setTab] = useState('Dateien');
   const [message, setMessage] = useState('Bereit');
@@ -108,16 +108,9 @@ export function AnimationBuilder({ onLegacy }: { onLegacy: () => void }) {
     </button>
   );
   const group = (title: HelpTopic, content: ReactNode, open = true) => (
-    <section className="ab-group">
-      <header>
-        <strong>{title}</strong>
-        {infoButton(title)}
-      </header>
-      <details open={open}>
-        <summary>{title} anzeigen</summary>
-        {content}
-      </details>
-    </section>
+    <InspectorSection title={title} info={infoButton(title)} defaultOpen={open}>
+      {content}
+    </InspectorSection>
   );
   const closeMenus = () =>
     document.querySelectorAll('.ab-menu[open]').forEach((element) => element.removeAttribute('open'));
@@ -134,10 +127,7 @@ export function AnimationBuilder({ onLegacy }: { onLegacy: () => void }) {
     </button>
   );
   const menu = (name: string, content: ReactNode) => (
-    <details className="ab-menu">
-      <summary>{name}</summary>
-      <div role="menu">{content}</div>
-    </details>
+    <BuilderMenu name={name}>{content}</BuilderMenu>
   );
   const zoom = (factor: number) =>
     document
@@ -268,10 +258,22 @@ export function AnimationBuilder({ onLegacy }: { onLegacy: () => void }) {
         }
       },
     });
+  const toolButton = ([tool, , label]: [Tool, string, string]) => (
+    <span className="ab-tool" key={tool}>
+      <button title={label} aria-label={label} aria-pressed={store.tool === tool} onClick={() => store.selectTool(tool)}>
+        {tool === 'rect' || tool === 'polygon' ? <SelectionIcon polygon={tool === 'polygon'} /> : label}
+      </button>
+      {store.tool === tool && (tool === 'pencil' || tool === 'eraser') && <BrushSizeSelector value={store.brushSize} onChange={(size) => {
+        if (tool === 'pencil') store.pencilSize = size;
+        else store.eraserSize = size;
+        store.emit();
+      }} />}
+    </span>
+  );
   const current = store.layer;
   return (
     <div className="animation-builder">
-      <header className="ab-menubar">
+      <BuilderHeader name={store.state.name} legacy={false} onSwitch={onLegacy} onOpenEditorMenu={onOpenEditorMenu}>
         {menu(
           'Datei',
           <>
@@ -388,93 +390,42 @@ export function AnimationBuilder({ onLegacy }: { onLegacy: () => void }) {
             ))}
           </>
         )}
-        <span className="ab-title">{store.state.name}</span>
-        <small>{store.dirty ? 'Ungespeichert' : 'Gesichert'}</small>
-        <button onClick={onLegacy}>Legacy 1024</button>
-      </header>
+      </BuilderHeader>
       <nav className="ab-toolbar" aria-label="Editor-Werkzeuge">
-        <button title="Neue Animation" onClick={newAnimation}>
-          ＋
-        </button>
-        <select aria-label="Arbeitsbereich" value={mode} onChange={(e) => setMode(e.target.value)}>
-          {['Animation', 'Pixel', 'Kombiniert'].map((m) => (
-            <option key={m}>{m}</option>
-          ))}
-        </select>
-        {infoButton('Ansicht')}
-        {tools.map(([tool, icon, label]) => (
-          <span className="ab-tool" key={tool}>
-            <button
-              title={label}
-              aria-label={label}
-              aria-pressed={store.tool === tool}
-              onClick={() => store.selectTool(tool)}
-            >
-              {icon}
-            </button>
-            {store.tool === tool && (tool === 'pencil' || tool === 'eraser') && (
-              <BrushSizeSelector
-                value={store.brushSize}
-                onChange={(size) => {
-                  if (tool === 'pencil') store.pencilSize = size;
-                  else store.eraserSize = size;
-                  store.emit();
-                }}
-              />
-            )}
-          </span>
-        ))}
-        <button
-          title={store.playing ? 'Pause' : 'Abspielen'}
-          onClick={() => (store.playing ? store.pause() : store.play())}
-        >
-          {store.playing ? 'Ⅱ' : '▶'}
-        </button>
-        <button title="PNG exportieren" onClick={savePng}>
-          ⇩
-        </button>
-        <select
-          aria-label="Grundpose"
-          value={store.state.source}
-          onChange={(e) => store.source(e.target.value as SourceId)}
-        >
-          {Object.entries(SOURCES).map(([id, label]) => (
-            <option key={id} value={id}>
-              {label}
-            </option>
-          ))}
-        </select>
-        {infoButton('Grundpose')}
-        <button title="Herauszoomen" onClick={() => zoom(0.8)}>
-          −
-        </button>
-        <button title="Zoom zurücksetzen" onClick={() => zoom(0)}>
-          Einpassen
-        </button>
-        <button title="Hineinzoomen" onClick={() => zoom(1.25)}>
-          ＋
-        </button>
-        <span className="ab-spacer" />
-        <button title="Rückgängig" disabled={!store.past.length} onClick={() => store.undo()}>
-          ↶
-        </button>
-        <button title="Wiederholen" disabled={!store.future.length} onClick={() => store.redo()}>
-          ↷
-        </button>
+        <ToolGroup label="Arbeitsbereich">
+          <button title="Neue Animation" onClick={newAnimation}>＋</button>
+          <select aria-label="Arbeitsbereich" value={mode} onChange={(e) => setMode(e.target.value)}>
+            {['Animation', 'Pixel', 'Kombiniert'].map((m) => <option key={m}>{m}</option>)}
+          </select>{infoButton('Ansicht')}
+        </ToolGroup>
+        <ToolGroup label="Zeichnen">{tools.slice(0, 3).map(toolButton)}</ToolGroup>
+        <ToolGroup label="Auswahl / Greifen">{tools.slice(3).map(toolButton)}</ToolGroup>
+        <ToolGroup label="Wiedergabe / Grundpose">
+          <button title={store.playing ? 'Pause' : 'Abspielen'} onClick={() => (store.playing ? store.pause() : store.play())}>{store.playing ? 'Ⅱ' : '▶'}</button>
+        <select aria-label="Grundpose" value={store.state.source} onChange={(e) => store.source(e.target.value as SourceId)}>
+          {Object.entries(SOURCES).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+        </select>{infoButton('Grundpose')}
+        </ToolGroup>
+        <ToolGroup label="Zoom">
+          <button title="Herauszoomen" onClick={() => zoom(0.8)}>−</button>
+          <button className="ab-fit" title="Zoom zurücksetzen" aria-label="Einpassen" onClick={() => zoom(0)}><span className="ab-fit-width" aria-hidden="true">Einpassen</span><FitIcon /></button>
+          <button title="Hineinzoomen" onClick={() => zoom(1.25)}>＋</button>
+        </ToolGroup>
+        <ToolGroup label="Undo / Redo">
+          <button title="Rückgängig" disabled={!store.past.length} onClick={() => store.undo()}>↶</button>
+          <button title="Wiederholen" disabled={!store.future.length} onClick={() => store.redo()}>↷</button>
+        </ToolGroup>
       </nav>
-      <main className="ab-workspace">
+      <main className="ab-workspace" data-timeline-open={timeline}>
         <RasterCanvas store={store} />
-        {left && (
-          <aside className="ab-left">
-            <header>
-              <button onClick={() => setTab('Dateien')}>Dateien</button>
-              <button onClick={() => setTab('Vorlagen')}>Vorlagen</button>
-              {infoButton(tab === 'Dateien' ? 'Dateien' : 'Vorlagen')}
-            </header>
+        <BuilderPanel side="left" title="Dateien / Vorlagen" open={left} onToggle={() => setLeft(!left)} info={infoButton(tab === 'Dateien' ? 'Dateien' : 'Vorlagen')}>
+            <LibraryTabs value={tab} onChange={setTab}>
             {tab === 'Dateien' ? (
               <>
-                <button onClick={newAnimation}>＋ Neue Animation</button>
-                <button onClick={saveLocal}>Sitzung lokal sichern</button>
+                <div className="ab-library-actions">
+                  <button onClick={newAnimation}>＋ Neue Animation</button>
+                  <button onClick={saveLocal}>Sitzung lokal sichern</button>
+                </div>
                 {[...sessions]
                   .filter(([name]) => !name.endsWith('.finoanim.json') && !name.startsWith('__'))
                   .map(([name, json]) => (
@@ -517,25 +468,16 @@ export function AnimationBuilder({ onLegacy }: { onLegacy: () => void }) {
                 ))}
               </>
             )}
-          </aside>
-        )}
-        <button
-          className={`ab-toggle ab-toggle-left ${left ? 'expanded' : ''}`}
-          title="Linkes Panel"
-          onClick={() => setLeft(!left)}
-        >
-          {left ? '‹' : '›'}
-        </button>
-        {right && (
-          <aside className="ab-right">
-            <h3>Inspektor</h3>
+            </LibraryTabs>
+        </BuilderPanel>
+        <BuilderPanel side="right" title="Inspektor" open={right} onToggle={() => setRight(!right)}>
             {mode !== 'Animation' &&
               group(
                 'Layer',
                 <>
-                  <button title="Pixel-Layer hinzufügen" onClick={() => store.addLayer()}>
+                  <div className="ab-nudge"><button title="Pixel-Layer hinzufügen" onClick={() => store.addLayer()}>
                     ＋
-                  </button>
+                  </button></div>
                   {store.reference && (
                     <div className={`ab-layer ${store.referenceSelected ? 'selected' : ''}`}>
                       <button
@@ -738,47 +680,13 @@ export function AnimationBuilder({ onLegacy }: { onLegacy: () => void }) {
                   <button onClick={() => store.setSelection(null)}>Auswahl aufheben</button>
                 </>
               )}
-          </aside>
-        )}
-        <button
-          className={`ab-toggle ab-toggle-right ${right ? 'expanded' : ''}`}
-          title="Inspektor"
-          onClick={() => setRight(!right)}
-        >
-          {right ? '›' : '‹'}
-        </button>
-        {timeline && (
-          <section
-            className="ab-timeline"
-            style={{
-              left: left ? 'var(--ab-left)' : 0,
-              right: right ? 'var(--ab-right)' : 0,
-            }}
-          >
-            <header>
-              <strong>Timeline</strong>
-              {infoButton('Timeline')}
-              <span className="ab-spacer" />
-              <button
-                title="Abspielen/Pause"
-                onClick={() => (store.playing ? store.pause() : store.play())}
-              >
-                {store.playing ? 'Ⅱ' : '▶'}
-              </button>
-              <button title="Frame hinzufügen" onClick={() => store.addFrame()}>
-                ＋
-              </button>
-              <button title="Frame duplizieren" onClick={() => store.addFrame(true)}>
-                ⧉
-              </button>
-              <button
-                title="Frame löschen"
-                disabled={store.state.frames.length === 1}
-                onClick={() => store.deleteFrame()}
-              >
-                ×
-              </button>
-            </header>
+        </BuilderPanel>
+        <BuilderPanel side="timeline" title="Timeline" open={timeline} onToggle={() => setTimeline(!timeline)} info={infoButton('Timeline')} actions={<>
+              <button title="Abspielen/Pause" onClick={() => store.playing ? store.pause() : store.play()}>{store.playing ? 'Ⅱ' : '▶'}</button>
+              <button title="Frame hinzufügen" onClick={() => store.addFrame()}>＋</button>
+              <button title="Frame duplizieren" onClick={() => store.addFrame(true)}>⧉</button>
+              <button title="Frame löschen" disabled={store.state.frames.length === 1} onClick={() => store.deleteFrame()}>×</button>
+            </>}>
             <div className="ab-frames">
               {store.state.frames.map((f, i) => (
                 <button key={i} aria-pressed={i === store.state.index} onClick={() => store.frameAt(i)}>
@@ -789,18 +697,10 @@ export function AnimationBuilder({ onLegacy }: { onLegacy: () => void }) {
                 </button>
               ))}
             </div>
-          </section>
-        )}
-        <button
-          className={`ab-toggle-bottom ${timeline ? 'expanded' : ''}`}
-          title="Timeline"
-          onClick={() => setTimeline(!timeline)}
-        >
-          {timeline ? '⌄' : '⌃'}
-        </button>
+        </BuilderPanel>
       </main>
       <footer className="ab-status">
-        <span>{message}</span>
+        <span>{message}</span><span className={store.dirty ? 'ab-unsaved' : ''}>{store.dirty ? 'Ungespeichert' : 'Unverändert'}</span>
         <span>
           {store.state.frames.length} Frames · {mode} · Raster 128×128
         </span>

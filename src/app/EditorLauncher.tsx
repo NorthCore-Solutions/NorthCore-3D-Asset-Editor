@@ -4,7 +4,7 @@ import { useEditorStore } from '../store/editorStore';
 import { animationStore } from '../animation/store';
 import { legacyStore } from '../animation/legacyStore';
 import { Dialog } from '../animation/Dialog';
-import { EditorReturnControl } from './EditorReturnControl';
+import { EDITOR_VERSION } from './version';
 import '../animation/builder.css';
 import './editor-launcher.css';
 
@@ -16,10 +16,22 @@ export function EditorLauncher() {
   const [editor, setEditor] = useState<'asset' | 'animation' | null>(null);
   const [exitOpen, setExitOpen] = useState(false);
   const [assetVisited, setAssetVisited] = useState(false);
-  const [returnCollapsed, setReturnCollapsed] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => {
     void initializeLiveUpdates();
   }, []);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        setMenuOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [menuOpen]);
   useEffect(() => {
     const unload = (event: BeforeUnloadEvent) => {
       if (useEditorStore.getState().dirty || animationStore.dirty || legacyStore.dirty) {
@@ -40,38 +52,34 @@ export function EditorLauncher() {
       <Suspense fallback={<div className="editor-launcher">Editor wird geladen …</div>}>
         {assetVisited && (
           <div className="asset-editor-host" hidden={editor !== 'asset'}>
-            <AssetEditor active={editor === 'asset'} />
-            <EditorReturnControl
-              collapsed={returnCollapsed}
-              onToggle={() => setReturnCollapsed((value) => !value)}
-              onExit={exit}
-            />
+            <AssetEditor active={editor === 'asset'} onOpenEditorMenu={() => setMenuOpen(true)} />
           </div>
         )}
         {editor === 'animation' ? (
           <div className="animation-editor-host">
-            <AnimationBuilder />
-            <EditorReturnControl
-              collapsed={returnCollapsed}
-              onToggle={() => setReturnCollapsed((value) => !value)}
-              onExit={exit}
-            />
+            <AnimationBuilder onOpenEditorMenu={() => setMenuOpen(true)} />
           </div>
         ) : (
           editor === null && (
             <main className="editor-launcher">
-              <h1>NorthCore Asset Editor</h1>
+              <h1>Northcore Editor {EDITOR_VERSION}</h1>
               <p>Wähle deinen Editor. Deine Arbeit bleibt beim Wechsel erhalten.</p>
               <nav>
                 <button
                   onClick={() => {
+                    setMenuOpen(false);
                     setAssetVisited(true);
                     setEditor('asset');
                   }}
                 >
                   Asset Editor<small>3D-Objekte gestalten und exportieren</small>
                 </button>
-                <button onClick={() => setEditor('animation')}>
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setEditor('animation');
+                  }}
+                >
                   Animation Builder<small>Fino zeichnen und animieren</small>
                 </button>
               </nav>
@@ -79,6 +87,30 @@ export function EditorLauncher() {
           )
         )}
       </Suspense>
+      {menuOpen && editor && (
+        <div
+          className="editor-menu-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setMenuOpen(false);
+          }}
+        >
+          <section className="editor-menu-dialog" role="dialog" aria-modal="true" aria-labelledby="editor-menu-title">
+            <h2 id="editor-menu-title">Menü</h2>
+            <button
+              className="editor-menu-return"
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                exit();
+              }}
+            >Zur Editor-Auswahl</button>
+            <button className="editor-menu-resume" type="button" onClick={() => setMenuOpen(false)}>
+              Fortsetzen
+            </button>
+          </section>
+        </div>
+      )}
       {exitOpen && (
         <Dialog
           title="Zur Editor-Auswahl?"

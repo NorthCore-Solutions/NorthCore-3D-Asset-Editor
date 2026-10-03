@@ -1,3 +1,4 @@
+import { CollapseChevron } from '../layout/CollapseChevron';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SHAPE_DEFINITIONS } from '../../geometry/factory';
 import { useEditorStore } from '../../store/editorStore';
@@ -108,7 +109,7 @@ export function ShapesPanel({ collapsed, onToggle }: ShapesPanelProps) {
           aria-label={collapsed ? 'Inventar einblenden' : 'Inventar ausblenden'}
           title={collapsed ? 'Inventar einblenden' : 'Inventar ausblenden'}
         >
-          {collapsed ? '›' : '‹'}
+          <CollapseChevron direction={collapsed ? 'right' : 'left'} />
         </button>
       </div>
 

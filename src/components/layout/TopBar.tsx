@@ -1,5 +1,4 @@
 import { useRef, useState } from 'react';
-import { EDITOR_VERSION } from '../../app/version';
 import { isNativeAndroid, overwriteNativeFile, saveBlobAs, type SavedFileReference } from '../../platform/nativeFileDialog';
 import { buildProjectFile, deserializeProject, safeFilename, serializeProject } from '../../persistence/projectFile';
 import { useEditorStore } from '../../store/editorStore';
@@ -46,7 +45,7 @@ function closeMenus(): void {
   document.querySelectorAll<HTMLDetailsElement>('.menu[open]').forEach((menu) => menu.removeAttribute('open'));
 }
 
-export function TopBar() {
+export function TopBar({ onOpenEditorMenu }: { onOpenEditorMenu?: () => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const fileTargetRef = useRef<StoredFileTarget | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
@@ -202,7 +201,12 @@ export function TopBar() {
           </div>
         </details>
         <input className="project-name" aria-label="Projektname" value={project.name} onChange={(event) => setProjectName(event.target.value)} />
-        <div className="brand">NorthCore 3D Asset Editor {EDITOR_VERSION}</div>
+        <div className="brand">Northcore 3D Asset Editor</div>
+        {onOpenEditorMenu && (
+          <button className="editor-menu-trigger" type="button" aria-label="Menü öffnen" title="Menü" onClick={onOpenEditorMenu}>
+            <span aria-hidden="true">☰</span>
+          </button>
+        )}
         <input
           ref={inputRef}
           type="file"

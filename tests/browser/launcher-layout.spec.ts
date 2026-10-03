@@ -13,22 +13,23 @@ async function expectFullAssetLayout(page: Page) {
     const root = document.querySelector('#root')!.getBoundingClientRect();
     const shell = document.querySelector('.app-shell')!.getBoundingClientRect();
     const workspace = document.querySelector('.workspace')!.getBoundingClientRect();
-    const returnControl = document.querySelector('.asset-editor-host .editor-return-control')!.getBoundingClientRect();
     const hierarchy = document.querySelector('.workspace > .hierarchy')!.getBoundingClientRect();
     const viewport = document.querySelector('.viewport')?.getBoundingClientRect();
     const canvas = document.querySelector<HTMLCanvasElement>('.viewport canvas');
     const top = document.querySelector('.topbar')!.getBoundingClientRect().height;
     const toolbar = document.querySelector('.toolbar')!.getBoundingClientRect().height;
-    const status = document.querySelector('.statusbar')!.getBoundingClientRect().height;
+    const statusbar = document.querySelector('.statusbar')!.getBoundingClientRect();
     return Math.abs(shell.height - root.height) < 1
       && Math.abs(shell.width - root.width) < 1
-      && Math.abs(workspace.height - (root.height - top - toolbar - status)) < 1
+      && Math.abs(workspace.height - (root.height - top - toolbar - statusbar.height)) < 1
       && workspace.height > 200
       && viewport?.height === workspace.height
       && !!canvas && canvas.width > 300 && canvas.height > 150
       && Math.abs(canvas.getBoundingClientRect().height - workspace.height) < 1
-      && returnControl.left >= 0
-      && returnControl.bottom <= hierarchy.top + 1;
+      && document.querySelectorAll('.asset-editor-host .editor-menu-trigger').length === 1
+      && document.querySelector('.editor-return-control') === null
+      && document.querySelector('.topbar .editor-menu-trigger') !== null
+      && hierarchy.height > 0;
   }), { timeout: 5000 }).toBe(true);
 }
 
@@ -57,6 +58,16 @@ for (const device of [
     } else {
       await expect(page.locator('.left-panel')).not.toHaveClass(/panel-collapsed/);
     }
+    const topbarHeight = await page.locator('.topbar').evaluate((element) => element.getBoundingClientRect().height);
+    await page.getByRole('button', { name: 'Menü öffnen' }).click();
+    await expect(page.getByRole('dialog', { name: 'Menü' })).toBeVisible();
+    const menuBounds = (await page.locator('.editor-menu-dialog').boundingBox())!;
+    expect(menuBounds.x).toBeGreaterThanOrEqual(0);
+    expect(menuBounds.y).toBeGreaterThanOrEqual(0);
+    expect(menuBounds.x + menuBounds.width).toBeLessThanOrEqual(device.width);
+    expect(menuBounds.y + menuBounds.height).toBeLessThanOrEqual(device.height);
+    await page.getByRole('button', { name: 'Fortsetzen' }).click();
+    expect(await page.locator('.topbar').evaluate((element) => element.getBoundingClientRect().height)).toBe(topbarHeight);
     expect(errors).toEqual([]);
     await context.close();
   });
@@ -68,7 +79,9 @@ test('layout survives resizing and editor switches with hidden host and remounte
   await expectFullAssetLayout(page);
   await page.setViewportSize({ width: 820, height: 1180 });
   await expectFullAssetLayout(page);
-  await page.getByRole('button', { name: '‹ Editor-Auswahl', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Menü öffnen' })).toBeVisible();
+  await page.getByRole('button', { name: 'Menü öffnen' }).click();
+  await page.getByRole('button', { name: 'Zur Editor-Auswahl' }).click();
   await expect(page.locator('.app-shell')).toBeHidden();
   await expect(page.locator('.viewport')).toHaveCount(0);
   await page.getByRole('button', {
@@ -77,14 +90,15 @@ test('layout survives resizing and editor switches with hidden host and remounte
   await expect(page.getByLabel('Raster128 Zeichenfläche')).toBeVisible();
   expect(await page.locator('.animation-builder').evaluate((el) =>
     Math.abs(el.getBoundingClientRect().height - innerHeight) < 1)).toBe(true);
-  await expect(page.locator('.ab-menubar > :first-child')).toHaveClass(/ab-menu/);
-  await expect(page.locator('.ab-menubar button[title="Zur Editor-Auswahl"]')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: '‹ Editor-Auswahl', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Editor-Auswahl einklappen' }).click();
-  await expect(page.getByRole('button', { name: '‹ Editor-Auswahl', exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Editor-Auswahl einblenden' }).click();
+  await expect(page.locator('.ab-main-menus > :first-child')).toHaveClass(/ab-menu/);
+  await expect(page.locator('.editor-return-control')).toHaveCount(0);
+  await expect(page.locator('.animation-editor-host .editor-menu-trigger')).toBeVisible();
+  await page.locator('.animation-editor-host .editor-menu-trigger').click();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.editor-menu-dialog')).toHaveCount(0);
+  await page.locator('.animation-editor-host .editor-menu-trigger').click();
+  await page.getByRole('button', { name: 'Zur Editor-Auswahl' }).click();
   await expect(page.locator('.app-shell')).toBeHidden();
-  await page.getByRole('button', { name: '‹ Editor-Auswahl', exact: true }).click();
   await openAssetEditor(page);
   await expectFullAssetLayout(page);
   await page.setViewportSize({ width: 1440, height: 1000 });
