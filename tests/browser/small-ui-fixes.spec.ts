@@ -2,14 +2,13 @@ import { test, expect } from '@playwright/test';
 import { EDITOR_VERSION } from '../../src/app/version';
 
 for (const tablet of [false, true]) {
-  for (const mode of ['asset', 'raster128', 'legacy1024']) {
+  for (const mode of ['asset', 'raster128']) {
     test(`small UI fixes: ${mode} ${tablet ? 'tablet' : 'desktop'}`, async ({ browser }) => {
       const context = await browser.newContext({ viewport: tablet ? { width: 820, height: 1180 } : { width: 1440, height: 1000 }, hasTouch: tablet, isMobile: tablet });
       const page = await context.newPage();
       await page.goto('/');
       await expect(page.getByRole('heading', { name: `Northcore Editor ${EDITOR_VERSION}`, exact: true })).toBeVisible();
       await page.getByRole('button', { name: mode === 'asset' ? 'Asset Editor 3D-Objekte gestalten und exportieren' : 'Animation Builder Fino zeichnen und animieren' }).click();
-      if (mode === 'legacy1024') await page.getByLabel('Editor-Modus', { exact: true }).selectOption(mode);
       await page.emulateMedia({ reducedMotion: 'reduce' });
       const isAsset = mode === 'asset';
       const panel = page.locator(isAsset ? '.hierarchy' : '.ab-timeline');
@@ -82,7 +81,7 @@ for (const tablet of [false, true]) {
       } else {
         if (tablet) await page.getByRole('button', { name: 'Inspektor einblenden', exact: true }).click();
         const inspector = page.locator('.ab-right');
-        const add = mode === 'raster128' ? inspector.getByTitle('Pixel-Layer hinzufügen', { exact: true }) : inspector.getByRole('button', { name: '＋ Pixel-Layer', exact: true });
+        const add = inspector.getByTitle('Pixel-Layer hinzufügen', { exact: true });
         await add.click();
         const checkGap = async () => {
           const addBox = (await add.boundingBox())!, first = (await inspector.locator('.ab-layer').first().boundingBox())!;
@@ -105,13 +104,13 @@ for (const tablet of [false, true]) {
         await page.locator('.ab-toolbar').getByTitle('Hineinzoomen', { exact: true }).click();
         await fit.click();
         // Check the exact existing fit geometry at an empty checker corner, independently of asset/render timing.
-        const fitCorner = await page.locator('.ab-canvas').evaluate((element, legacy) => {
+        const fitCorner = await page.locator('.ab-canvas').evaluate((element) => {
           const canvas = element as HTMLCanvasElement, box = canvas.getBoundingClientRect(), available = Math.max(128, box.height - 120);
-          const side = Math.min(box.width, available) * (legacy ? 0.85 : 0.84), x = (box.width - side) / 2, y = (available - side) / 2;
-          const cell = side / (legacy ? 64 : 128), ratio = canvas.width / box.width;
+          const side = Math.min(box.width, available) * 0.84, x = (box.width - side) / 2, y = (available - side) / 2;
+          const cell = side / 128, ratio = canvas.width / box.width;
           const rgba = canvas.getContext('2d')!.getImageData(Math.floor((x + cell / 2) * ratio), Math.floor((y + cell / 2) * ratio), 1, 1).data;
           return [...rgba];
-        }, mode === 'legacy1024');
+        });
         expect(fitCorner).toEqual([62, 67, 72, 255]);
       }
       await page.screenshot({ path: `test-results/small-ui-${mode}-${tablet ? 'tablet' : 'desktop'}.png` });

@@ -1,0 +1,51 @@
+{
+  "version": 2,
+  "faceRigVersion": 2,
+  "id": "synthetic-multiframe",
+  "name": "Synthetic format fixture",
+  "basePose": "fino_standing_neutral.png",
+  "reactionState": "neutral",
+  "frames": [
+    {
+      "durationMs": 37,
+      "ops": [],
+      "layers": [
+        {
+          "id": "pixels",
+          "name": "Pixels",
+          "kind": "pixels",
+          "pixels": [
+            {
+              "x": 0,
+              "y": 0,
+              "rgba": 305419904
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "durationMs": 91,
+      "ops": [],
+      "layers": [
+        {
+          "id": "pixels",
+          "name": "Pixels",
+          "kind": "pixels",
+          "pixels": [
+            {
+              "x": 8,
+              "y": 8,
+              "rgba": 2864434431
+            },
+            {
+              "x": 9,
+              "y": 8,
+              "rgba": 287453953
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

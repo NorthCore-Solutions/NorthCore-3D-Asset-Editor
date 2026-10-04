@@ -1,4 +1,9 @@
+import { bytes, rgba } from './colors';
 import standing from './data/standing-neutral.json';
+import { nativePosePixels, poseForSource } from './nativePoses';
+import type { NativePoseReference } from './nativePoses';
+import type { FaceSlot, NativeFace } from './nativeFaces';
+import type { RasterRecipe } from './rasterOperations';
 
 export const SIZE = 128;
 export type Point = { x: number; y: number };
@@ -11,8 +16,10 @@ export type Layer = {
   locked: boolean;
   pixels: Pixels;
   faceId?: string;
+  nativeFaceSlot?: FaceSlot;
+  recipe?: RasterRecipe;
 };
-export type Frame = { layers: readonly Layer[]; duration: number };
+export type Frame = { layers: readonly Layer[]; duration: number; pose?: NativePoseReference; nativeFace?: NativeFace };
 export type PixelAsset = { id: string; name: string; pixels: Pixels; bounds: Rect };
 export type Reference = {
   name: string;
@@ -26,14 +33,6 @@ export type Reference = {
 export const contains = (x: number, y: number) => x >= 0 && y >= 0 && x < SIZE && y < SIZE;
 export const key = (p: Point) => p.y * SIZE + p.x;
 export const point = (k: number): Point => ({ x: k % SIZE, y: Math.floor(k / SIZE) });
-export const rgba = (r: number, g: number, b: number, a: number) =>
-  ((r << 24) | (g << 16) | (b << 8) | a) >>> 0;
-export const bytes = (v: number) => [v >>> 24, (v >>> 16) & 255, (v >>> 8) & 255, v & 255];
-export const hex = (v: number) => `#${v.toString(16).padStart(8, '0').toUpperCase()}`;
-export const cssColor = (v: number) => {
-  const [r, g, b, a] = bytes(v);
-  return `rgba(${r},${g},${b},${a! / 255})`;
-};
 export function blankLayer(id: string = crypto.randomUUID(), name = 'Pixel-Layer'): Layer {
   return { id, name, visible: true, locked: false, pixels: new Map() };
 }
@@ -93,10 +92,14 @@ export function fixture(): Pixels {
   for (let y = 56; y < 72; y++) for (let x = 40; x < 64; x++) p.set(y * SIZE + x, 0x8844ccff);
   return p;
 }
-const pose = nativePose();
 export const SOURCES = {
   empty: 'Leer / transparent',
   'fino-standing-neutral-128': 'Stehend – neutral',
+  'fino-standing-active-128': 'Stehend – aktiv',
+  'fino-sitting-relaxed-128': 'Sitzend – entspannt',
+  'fino-sleeping-128': 'Schlafend',
+  'fino-reading-128': 'Lesend',
+  'fino-eating-128': 'Essend',
   'dev-reference-128': 'Testfixture (128×128)',
 };
 export type SourceId = keyof typeof SOURCES;
@@ -105,7 +108,7 @@ export function sourceLayers(source: SourceId): Layer[] {
   return [
     {
       ...blankLayer('native-pose', source === 'dev-reference-128' ? 'Testfixture' : 'Grundpose – Pixel'),
-      pixels: source === 'dev-reference-128' ? fixture() : pose,
+      pixels: source === 'dev-reference-128' ? fixture() : nativePosePixels(poseForSource(source)!.id),
       locked: source === 'dev-reference-128',
     },
     ...(source === 'dev-reference-128' ? [blankLayer('pixels-1')] : []),

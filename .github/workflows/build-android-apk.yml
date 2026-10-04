@@ -6,7 +6,9 @@ on:
     branches: [main]
     paths:
       - 'src/**'
+      - 'public/**'
       - 'tests/**'
+      - 'scripts/check-legacy-authoring.mjs'
       - 'android/**'
       - 'package.json'
       - 'package-lock.json'
@@ -47,6 +49,9 @@ jobs:
 
       - name: Build web app
         run: npm run build
+
+      - name: Verify removal of Legacy authoring
+        run: node scripts/check-legacy-authoring.mjs
 
       - name: Sync Capacitor Android
         run: npx cap sync android

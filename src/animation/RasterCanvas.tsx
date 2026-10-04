@@ -1,24 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { Stroke } from './store';
 import type { AnimationStore } from './store';
-import {
-  SIZE,
-  Viewport,
-  bounds,
-  brushBounds,
-  contains,
-  cssColor,
-  key,
-  point,
-  polygonMask,
-  rectMask,
-  referenceSample,
-  render,
-  sample,
-  shiftReference,
-  transform,
-} from './raster';
+import { SIZE, Viewport, bounds, brushBounds, contains, key, point, polygonMask, rectMask, referenceSample, render, sample, shiftReference, transform } from './raster';
+import { cssColor } from './colors';
 import type { Layer, Pixels, Point, Reference } from './raster';
+import { FACE_SLOTS, dragNativeSlot } from './nativeFaces';
+import type { FaceSlot, NativeFaceSlot } from './nativeFaces';
+import { EDITOR_MENU_OPENED } from '../app/editorMenuModal';
 
 const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y);
 const midpoint = (a: Point, b: Point): Point => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
@@ -35,6 +23,7 @@ export function RasterCanvas({ store }: { store: AnimationStore }) {
     let polygon: Point[] = [];
     let stroke: Stroke | null = null;
     let baseFrame = store.frame;
+    let faceEditing = !!store.faceDraft;
     let activeTool = store.tool,
       activeLayer = store.state.active;
     let dragging: {
@@ -48,6 +37,7 @@ export function RasterCanvas({ store }: { store: AnimationStore }) {
       rect: boolean;
     } | null = null;
     const pointers = new Map<number, Point>();
+    let faceDrag: { pointerId: number; slot: FaceSlot; initial: NativeFaceSlot; start: Point } | null = null;
     let pinch: { focal: Point; distance: number } | null = null;
     const frameCache = new WeakMap<object, HTMLCanvasElement>();
     const referenceCache = new WeakMap<Uint8Array, HTMLCanvasElement>();
@@ -59,10 +49,11 @@ export function RasterCanvas({ store }: { store: AnimationStore }) {
       return image;
     };
     const frameImage = () => {
-      let image = frameCache.get(store.frame);
+      const frame = store.displayFrame;
+      let image = frameCache.get(frame);
       if (!image) {
-        image = makeImage(render(store.frame.layers), SIZE, SIZE);
-        frameCache.set(store.frame, image);
+        image = makeImage(render(frame.layers), SIZE, SIZE);
+        frameCache.set(frame, image);
       }
       return image;
     };
@@ -133,6 +124,15 @@ export function RasterCanvas({ store }: { store: AnimationStore }) {
       if (dragging?.layer && dragging.pixels) patchPixels(dragging.layer, dragging.pixels);
       drawReference(previewReference(), viewport, 0.4);
       ctx.restore();
+      const face = store.faceDraft?.face;
+      if (face) for (const slot of FACE_SLOTS) {
+        const s = face.slots[slot], center = viewport.edge({ x: s.x + s.width / 2, y: s.y + s.height / 2 });
+        ctx.beginPath(); ctx.arc(center.x, center.y, 22, 0, Math.PI * 2);
+        ctx.strokeStyle = slot === store.selectedFaceSlot ? '#eadbff' : '#af85ff';
+        ctx.lineWidth = slot === store.selectedFaceSlot ? 3 : 1;
+        ctx.stroke();
+        ctx.fillStyle = '#eadbff'; ctx.fillRect(center.x - 2, center.y - 2, 4, 4);
+      }
       ctx.lineWidth = 1;
       ctx.strokeStyle = '#c5a3ff';
       const shift = delta();
@@ -182,7 +182,7 @@ export function RasterCanvas({ store }: { store: AnimationStore }) {
         if (hover) ctx.lineTo(hover.x, hover.y);
         ctx.stroke();
       }
-      if (!hover) return;
+      if (!hover || face) return;
       const target = viewport.pixel(hover);
       if (!contains(target.x, target.y)) return;
       if (store.tool === 'pencil' || store.tool === 'eraser') {
@@ -230,6 +230,9 @@ export function RasterCanvas({ store }: { store: AnimationStore }) {
       ctx.fillRect(center.x - 12, center.y + radius - 10, 24, 14);
     };
     const cancel = () => {
+      const previous = faceDrag;
+      faceDrag = null;
+      if (previous) store.previewFaceSlot(previous.slot, previous.initial);
       stroke = null;
       dragging = null;
       pinch = null;
@@ -242,10 +245,13 @@ export function RasterCanvas({ store }: { store: AnimationStore }) {
         baseFrame !== store.frame ||
         activeTool !== store.tool ||
         activeLayer !== store.state.active ||
+        faceEditing !== !!store.faceDraft ||
         store.playing
       ) {
         stroke = null;
         dragging = null;
+        faceDrag = null;
+        faceEditing = !!store.faceDraft;
         baseFrame = store.frame;
         activeTool = store.tool;
         activeLayer = store.state.active;
@@ -262,6 +268,9 @@ export function RasterCanvas({ store }: { store: AnimationStore }) {
       pointers.set(event.pointerId, p);
       hover = p;
       if (pointers.size === 2) {
+        const previous = faceDrag;
+        faceDrag = null;
+        if (previous) store.previewFaceSlot(previous.slot, previous.initial);
         stroke = null;
         dragging = null;
         const [a, b] = [...pointers.values()];
@@ -271,6 +280,18 @@ export function RasterCanvas({ store }: { store: AnimationStore }) {
       }
       const target = viewport.pixel(p);
       baseFrame = store.frame;
+      const face = store.faceDraft?.face;
+      if (face && event.button !== 1 && store.tool !== 'pan') {
+        const hit = FACE_SLOTS.map((slot) => {
+          const s = face.slots[slot];
+          return { slot, distance: distance(p, viewport.edge({ x: s.x + s.width / 2, y: s.y + s.height / 2 })) };
+        }).sort((a, b) => a.distance - b.distance)[0]!;
+        if (hit.distance <= 22) {
+          store.selectFaceSlot(hit.slot);
+          faceDrag = { pointerId: event.pointerId, slot: hit.slot, initial: face.slots[hit.slot], start: viewport.logical(p) };
+        }
+        draw(); return;
+      }
       if (event.button === 1 || store.tool === 'pan')
         dragging = { start: target, screen: p, selection: null, pan: true, rect: false };
       else if (!contains(target.x, target.y)) return;
@@ -325,6 +346,9 @@ export function RasterCanvas({ store }: { store: AnimationStore }) {
           .zoomAt(pinch.focal, d / Math.max(0.1, pinch.distance))
           .pan({ x: focal.x - pinch.focal.x, y: focal.y - pinch.focal.y });
         pinch = { focal, distance: d };
+      } else if (faceDrag && faceDrag.pointerId === event.pointerId) {
+        const logical = viewport.logical(p);
+        store.previewFaceSlot(faceDrag.slot, dragNativeSlot(faceDrag.initial, logical.x - faceDrag.start.x, logical.y - faceDrag.start.y));
       } else if (dragging?.pan) {
         viewport = viewport.pan({ x: p.x - dragging.screen.x, y: p.y - dragging.screen.y });
         dragging.screen = p;
@@ -347,6 +371,7 @@ export function RasterCanvas({ store }: { store: AnimationStore }) {
     };
     const up = (event: PointerEvent) => {
       pointers.delete(event.pointerId);
+      if (faceDrag?.pointerId === event.pointerId) { faceDrag = null; draw(); return; }
       if (pinch) {
         if (!pointers.size) pinch = null;
         return;
@@ -384,6 +409,7 @@ export function RasterCanvas({ store }: { store: AnimationStore }) {
     const keyboard = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         cancel();
+        store.cancelFacePreview();
         store.cancelPicker();
         event.stopPropagation();
       }
@@ -432,6 +458,7 @@ export function RasterCanvas({ store }: { store: AnimationStore }) {
     canvas.addEventListener('wheel', wheel, { passive: false });
     canvas.addEventListener('keydown', keyboard);
     canvas.addEventListener('builder-zoom', zoom);
+    window.addEventListener(EDITOR_MENU_OPENED, cancel);
     return () => {
       if (initialized) store.viewport = viewport;
       unsubscribe();
@@ -444,6 +471,7 @@ export function RasterCanvas({ store }: { store: AnimationStore }) {
       canvas.removeEventListener('wheel', wheel);
       canvas.removeEventListener('keydown', keyboard);
       canvas.removeEventListener('builder-zoom', zoom);
+      window.removeEventListener(EDITOR_MENU_OPENED, cancel);
     };
   }, [store]);
   return <canvas ref={ref} className="ab-canvas" tabIndex={0} aria-label="Raster128 Zeichenfläche" />;

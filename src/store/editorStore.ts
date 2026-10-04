@@ -26,6 +26,7 @@ interface EditorState {
   past: EditorSnapshot[];
   future: EditorSnapshot[];
   transactionStart: EditorSnapshot | null;
+  sessionId: number;
   dirty: boolean;
   message: string;
   cameraView: CameraView;
@@ -52,7 +53,7 @@ interface EditorState {
   redo: () => void;
   newProject: (name?: string) => void;
   loadProject: (file: ProjectFile) => void;
-  markSaved: () => void;
+  markSaved: (saved: Pick<EditorState, 'sessionId' | 'objects' | 'project' | 'scene'>) => boolean;
   snapshot: () => EditorSnapshot;
 }
 
@@ -86,7 +87,7 @@ const expandSelection = (objects: SceneObjectData[], ids: string[]): string[] =>
 export const useEditorStore = create<EditorState>((set, get) => ({
   objects: [], selectedId: null, selectedIds: [], project: defaultProject(), scene: defaultScene(), tool: 'translate',
   snap: { enabled: false, surface: false, position: 0.25, rotation: 15, scale: 0.1 }, recentColors: [],
-  past: [], future: [], transactionStart: null, dirty: false, message: 'Bereit', cameraView: 'perspective', cameraRequestId: 0,
+  past: [], future: [], transactionStart: null, sessionId: 0, dirty: false, message: 'Bereit', cameraView: 'perspective', cameraRequestId: 0,
 
   setMessage: (message) => set({ message }),
   setProjectName: (name) => set((state) => ({ ...withHistory(state), project: { ...state.project, name, updatedAt: now() }, dirty: true })),
@@ -252,14 +253,23 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     return { ...clone(next), past: [...state.past, snapshotFrom(state)].slice(-100), future: state.future.slice(1), dirty: true, message: 'Wiederholt' };
   }),
 
-  newProject: (name = 'Unbenanntes Asset') => set({
+  newProject: (name = 'Unbenanntes Asset') => set((state) => ({
+    sessionId: state.sessionId + 1,
     objects: [], selectedId: null, selectedIds: [], project: { ...defaultProject(), name }, scene: defaultScene(), past: [], future: [], transactionStart: null, dirty: false, message: 'Neues Projekt erstellt'
-  }),
+  })),
 
-  loadProject: (file) => set({
+  loadProject: (file) => set((state) => ({
+    sessionId: state.sessionId + 1,
     objects: clone(file.objects), selectedId: null, selectedIds: [], project: clone(file.project), scene: clone(file.scene), past: [], future: [], transactionStart: null, dirty: false, message: `${file.project.name} geladen`
-  }),
+  })),
 
-  markSaved: () => set({ dirty: false, message: 'Projekt gespeichert' }),
+  // Persistent edits replace these references; UI-only changes do not.
+  markSaved: (saved) => {
+    const state = get();
+    if (state.sessionId !== saved.sessionId || state.objects !== saved.objects ||
+      state.project !== saved.project || state.scene !== saved.scene) return false;
+    set({ dirty: false, message: 'Projekt gespeichert' });
+    return true;
+  },
   snapshot: () => snapshotFrom(get())
 }));

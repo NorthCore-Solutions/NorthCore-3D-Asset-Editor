@@ -47,11 +47,11 @@ function closeMenus(): void {
 
 export function TopBar({ onOpenEditorMenu }: { onOpenEditorMenu?: () => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const fileTargetRef = useRef<StoredFileTarget | null>(null);
+  const fileTargetRef = useRef<(StoredFileTarget & { sessionId: number }) | null>(null);
+  const savePendingRef = useRef(false);
   const [exportOpen, setExportOpen] = useState(false);
   const project = useEditorStore((state) => state.project);
   const scene = useEditorStore((state) => state.scene);
-  const objects = useEditorStore((state) => state.objects);
   const setProjectName = useEditorStore((state) => state.setProjectName);
   const newProject = useEditorStore((state) => state.newProject);
   const loadProject = useEditorStore((state) => state.loadProject);
@@ -67,80 +67,63 @@ export function TopBar({ onOpenEditorMenu }: { onOpenEditorMenu?: () => void }) 
   const setScene = useEditorStore((state) => state.setScene);
   const requestCameraView = useEditorStore((state) => state.requestCameraView);
 
-  const serializeCurrentProject = (): string => {
-    const file = buildProjectFile(project, scene, objects);
-    return serializeProject({ project: file.project, scene: file.scene, objects: file.objects });
-  };
-
   const writeBrowserFile = async (handle: BrowserFileHandleLike, content: string): Promise<void> => {
     const writable = await handle.createWritable();
     await writable.write(content);
     await writable.close();
   };
 
-  const saveAs = async (): Promise<void> => {
-    const content = serializeCurrentProject();
-    const filename = `${safeFilename(project.name)}.ncae.json`;
-    const blob = new Blob([content], { type: 'application/json' });
-    const pickerWindow = window as SaveFilePickerWindow;
+  const save = async (saveAs = false): Promise<void> => {
+    // Lock synchronously, before the picker or any asynchronous write can yield.
+    if (savePendingRef.current) return;
+    savePendingRef.current = true;
+    const savedState = useEditorStore.getState();
+    const sameSession = () => useEditorStore.getState().sessionId === savedState.sessionId;
 
     try {
-      if (isNativeAndroid()) {
-        const saved = await saveBlobAs(blob, filename, 'application/json');
-        if (!saved?.uri) return;
-
-        fileTargetRef.current = { kind: 'native', uri: saved.uri, name: saved.name };
-        markSaved();
-        setMessage(`Gespeichert unter: ${saved.name}`);
-      } else if (pickerWindow.showSaveFilePicker) {
-        const handle = await pickerWindow.showSaveFilePicker({
-          suggestedName: filename,
-          excludeAcceptAllOption: false,
-          types: [{
-            description: 'NorthCore Asset Editor Projekt',
-            accept: { 'application/json': ['.json'] }
-          }]
-        });
-        await writeBrowserFile(handle, content);
-        fileTargetRef.current = { kind: 'browser', handle };
-        markSaved();
-        setMessage(`Gespeichert unter: ${handle.name}`);
+      const file = buildProjectFile(savedState.project, savedState.scene, savedState.objects);
+      const content = serializeProject({ project: file.project, scene: file.scene, objects: file.objects });
+      const blob = new Blob([content], { type: 'application/json' });
+      const filename = `${safeFilename(savedState.project.name)}.ncae.json`;
+      let target = !saveAs && fileTargetRef.current?.sessionId === savedState.sessionId
+        ? fileTargetRef.current : null;
+      let message: string;
+      if (target) {
+        if (target.kind === 'native') await overwriteNativeFile(target.uri, blob);
+        else await writeBrowserFile(target.handle, content);
+        message = `Gespeichert: ${target.kind === 'native' ? target.name : target.handle.name}`;
+      } else if (isNativeAndroid()) {
+        const result = await saveBlobAs(blob, filename, 'application/json');
+        if (!result?.uri) return;
+        target = { kind: 'native', uri: result.uri, name: result.name, sessionId: savedState.sessionId };
+        message = `Gespeichert unter: ${result.name}`;
       } else {
-        const saved = await saveBlobAs(blob, filename, 'application/json');
-        if (!saved) return;
-
-        fileTargetRef.current = null;
-        markSaved();
-        setMessage(`Heruntergeladen: ${saved.name}`);
+        const pickerWindow = window as SaveFilePickerWindow;
+        if (pickerWindow.showSaveFilePicker) {
+          const handle = await pickerWindow.showSaveFilePicker({
+            suggestedName: filename,
+            excludeAcceptAllOption: false,
+            types: [{ description: 'NorthCore Asset Editor Projekt', accept: { 'application/json': ['.json'] } }]
+          });
+          if (!sameSession()) return;
+          await writeBrowserFile(handle, content);
+          target = { kind: 'browser', handle, sessionId: savedState.sessionId };
+          message = `Gespeichert unter: ${handle.name}`;
+        } else {
+          const result = await saveBlobAs(blob, filename, 'application/json');
+          if (!result) return;
+          message = `Heruntergeladen: ${result.name}`;
+        }
       }
+      if (!sameSession()) return;
+      fileTargetRef.current = target;
+      const unchanged = markSaved(savedState);
+      setMessage(unchanged ? message : `${message} – weitere Änderungen sind ungespeichert`);
     } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') return;
+      if (!sameSession() || (error instanceof DOMException && error.name === 'AbortError')) return;
       setMessage(error instanceof Error ? `Speichern fehlgeschlagen: ${error.message}` : 'Speichern fehlgeschlagen');
     } finally {
-      closeMenus();
-    }
-  };
-
-  const save = async (): Promise<void> => {
-    const target = fileTargetRef.current;
-    if (!target) {
-      await saveAs();
-      return;
-    }
-
-    try {
-      const content = serializeCurrentProject();
-      if (target.kind === 'native') {
-        await overwriteNativeFile(target.uri, new Blob([content], { type: 'application/json' }));
-        setMessage(`Gespeichert: ${target.name}`);
-      } else {
-        await writeBrowserFile(target.handle, content);
-        setMessage(`Gespeichert: ${target.handle.name}`);
-      }
-      markSaved();
-    } catch (error) {
-      setMessage(error instanceof Error ? `Speichern fehlgeschlagen: ${error.message}` : 'Speichern fehlgeschlagen');
-    } finally {
+      savePendingRef.current = false;
       closeMenus();
     }
   };
@@ -163,7 +146,7 @@ export function TopBar({ onOpenEditorMenu }: { onOpenEditorMenu?: () => void }) 
             <button onClick={() => { fileTargetRef.current = null; newProject(); closeMenus(); }}>Neu</button>
             <button onClick={() => { inputRef.current?.click(); closeMenus(); }}>Öffnen…</button>
             <button onClick={() => { void save(); }}>Speichern</button>
-            <button onClick={() => { void saveAs(); }}>Speichern unter…</button>
+            <button onClick={() => { void save(true); }}>Speichern unter…</button>
           </div>
         </details>
         <details className="menu" onMouseLeave={(event) => event.currentTarget.removeAttribute('open')}>

@@ -2,8 +2,8 @@ import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { CollapseChevron } from '../components/layout/CollapseChevron';
 
-export function BuilderHeader({ children, name, legacy, onSwitch, onOpenEditorMenu }: {
-  children: ReactNode; name: string; legacy: boolean; onSwitch: () => void;
+export function BuilderHeader({ children, name, onOpenEditorMenu }: {
+  children: ReactNode; name: string;
   onOpenEditorMenu?: () => void;
 }) {
   return <header className="ab-menubar">
@@ -25,10 +25,6 @@ export function BuilderHeader({ children, name, legacy, onSwitch, onOpenEditorMe
     >{children}</nav>
     <span className="ab-title" title={name}>{name}</span>
     <span className="ab-brand">NorthCore Animation Builder</span>
-    <select aria-label="Editor-Modus" value={legacy ? 'legacy1024' : 'raster128'} onChange={onSwitch}>
-      <option value="raster128">Raster128</option>
-      <option value="legacy1024">Legacy1024</option>
-    </select>
     {onOpenEditorMenu && <button className="editor-menu-trigger" type="button" aria-label="Menü öffnen" title="Menü" onClick={onOpenEditorMenu}><span aria-hidden="true">☰</span></button>}
   </header>;
 }

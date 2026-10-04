@@ -60,7 +60,6 @@
 .ab-menu strong { padding: 8px; }
 .ab-title { flex: 1 1 180px; min-width: 90px; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; height: 26px; line-height: 24px; padding: 0 8px; margin-left: 8px; border: 1px solid var(--ab-border); border-radius: 3px; background: #12181c; }
 .ab-brand { margin-left: auto; white-space: nowrap; text-transform: uppercase; letter-spacing: .08em; font-size: 12px; font-weight: 700; color: var(--ab-silver); }
-.ab-menubar > select { flex: 0 0 auto; font-size: 12px; margin-left: 6px; width: 112px; }
 .animation-builder .ab-menubar .editor-menu-trigger { margin-left: 4px; flex: 0 0 auto; padding: 0; height: 27px; }
 .ab-toolbar { height: 42px; min-height: 42px; padding: 5px 8px; background: var(--ab-panel); overflow-x: auto; overflow-y: hidden; scrollbar-width: none; touch-action: pan-x; overscroll-behavior-x: contain; }
 .ab-toolbar::-webkit-scrollbar { display: none; }
@@ -76,7 +75,6 @@
 /* Preserve the previous text button's intrinsic width in each responsive mode. */
 .ab-fit-width { visibility: hidden; pointer-events: none; }
 .ab-brush { width: 65px; text-align: center; }
-.ab-spacer { flex: 1; }
 .ab-workspace { position: relative; flex: 1; min-height: 0; isolation: isolate; overflow: hidden; }
 .ab-canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; outline: none; }
 .ab-panel { position: absolute; display: flex; flex-direction: column; min-height: 0; background: var(--ab-panel); border: 1px solid var(--ab-border); z-index: 3; overflow: hidden; transition: transform 160ms ease-out; }
@@ -140,6 +138,9 @@
 .ab-status { display: flex; align-items: center; gap: 14px; height: 28px; flex: 0 0 28px; padding: 0 9px; border-top: 1px solid var(--ab-border); font-size: 11px; color: var(--ab-muted); background: #141a1e; }
 .ab-status > span:first-child { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ab-status > span:last-child { color: var(--ab-silver); white-space: nowrap; }
+.ab-storage-conflict { position: fixed; z-index: 25; left: 9px; right: 9px; bottom: 36px; max-width: 720px; max-height: calc(100dvh - 120px); display: flex; flex-wrap: wrap; gap: 6px; padding: 9px; overflow: auto; overflow-wrap: anywhere; background: var(--ab-panel); border: 1px solid var(--ab-border); border-radius: var(--ab-radius); }
+.ab-storage-conflict > span { flex-basis: 100%; }
+.ab-storage-conflict > button { min-height: 40px; }
 .ab-unsaved { color: var(--warning, #d8a657); }
 .ab-dialog { color: var(--ab-text); background: var(--ab-panel); border: 1px solid var(--ab-border-strong); border-radius: 6px; width: min(450px, 90vw); max-height: 85dvh; overflow: hidden; padding: 22px; z-index: 100; }
 .ab-dialog > form { display: flex; flex-direction: column; max-height: calc(85dvh - 44px); min-height: 0; }
@@ -176,7 +177,6 @@
   .ab-menu > summary { min-height: 44px; padding: 0 6px; }
   .ab-menu button { min-height: 40px; font-size: 13px; }
   .ab-title { height: 34px; line-height: 32px; min-width: 70px; margin-left: 4px; font-size: 12px; }
-  .ab-menubar > select { width: 108px; height: 34px; margin-left: 2px; }
   .animation-builder .ab-menubar .editor-menu-trigger { height: 34px; width: 40px; min-width: 40px; }
   .ab-toolbar { height: 48px; min-height: 48px; padding: 5px 6px; gap: 4px; }
   .ab-toolbar button, .ab-toolbar select { min-height: 36px; height: 36px; min-width: 34px; }
@@ -202,7 +202,6 @@
 @media (max-width: 600px) {
   .ab-menu > summary { font-size: 11px; padding: 0 3px; }
   .ab-title { min-width: 45px; margin-left: 2px; padding: 0 4px; }
-  .ab-menubar > select { width: 94px; }
   .ab-menu > div { position: fixed; left: 8px; top: 44px; max-width: calc(100vw - 16px); }
   .ab-dialog { padding: 16px; }
   .ab-dialog > form { max-height: calc(85dvh - 32px); }

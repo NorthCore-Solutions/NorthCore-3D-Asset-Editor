@@ -1,3 +1,4 @@
+import { EDITOR_MENU_OPENED, isEditorMenuModalOpen } from '../../../app/editorMenuModal';
 import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -11,43 +12,49 @@ export function KeyboardCameraControls({ active }: { active: boolean }) {
   const pressedKeys = useRef(new Set<string>());
 
   useEffect(() => {
+    const keys = pressedKeys.current;
     if (!active) {
-      pressedKeys.current.clear();
+      keys.clear();
       return;
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (isEditorMenuModalOpen()) { keys.clear(); return; }
       const key = event.key.toLowerCase();
       if (!CAMERA_KEYS.has(key)) return;
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
-      pressedKeys.current.add(key);
+      keys.add(key);
     };
 
     const handleKeyUp = (event: KeyboardEvent) => {
+      if (isEditorMenuModalOpen()) { keys.clear(); return; }
       const key = event.key.toLowerCase();
       if (!CAMERA_KEYS.has(key)) return;
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
-      pressedKeys.current.delete(key);
+      keys.delete(key);
     };
 
-    const clearKeys = () => pressedKeys.current.clear();
+    const clearKeys = () => keys.clear();
     window.addEventListener('keydown', handleKeyDown, true);
     window.addEventListener('keyup', handleKeyUp, true);
     window.addEventListener('blur', clearKeys);
+    window.addEventListener(EDITOR_MENU_OPENED, clearKeys);
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown, true);
       window.removeEventListener('keyup', handleKeyUp, true);
       window.removeEventListener('blur', clearKeys);
-      pressedKeys.current.clear();
+      window.removeEventListener(EDITOR_MENU_OPENED, clearKeys);
+      keys.clear();
     };
   }, [active]);
 
   useFrame((_, delta) => {
+    if (isEditorMenuModalOpen()) { pressedKeys.current.clear(); return; }
     if (!active || !controls || pressedKeys.current.size === 0) return;
 
     const forward = new THREE.Vector3().subVectors(controls.target, camera.position);

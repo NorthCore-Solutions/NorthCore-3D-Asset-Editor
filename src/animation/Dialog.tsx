@@ -1,6 +1,12 @@
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 
+export type DialogConfig = {
+  title: string;
+  content: ReactNode;
+  submit?: (data: FormData) => void;
+  action?: string;
+};
 export function Dialog({
   title,
   children,

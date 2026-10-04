@@ -29,20 +29,33 @@ export function App({ active = true, onOpenEditorMenu }: { active?: boolean; onO
   const scene = useEditorStore((state) => state.scene);
   const loadProject = useEditorStore((state) => state.loadProject);
   const setMessage = useEditorStore((state) => state.setMessage);
-  const [initialAutosave] = useState(() => localStorage.getItem(AUTOSAVE_KEY));
-  const [restoreOpen, setRestoreOpen] = useState(Boolean(initialAutosave));
+  const [initialAutosave] = useState<{ value: string | null; error: string | null }>(() => {
+    try { return { value: localStorage.getItem(AUTOSAVE_KEY), error: null }; }
+    catch (error) { return { value: null, error: error instanceof Error ? error.message : 'Lokaler Speicher nicht verfügbar' }; }
+  });
+  const [restoreOpen, setRestoreOpen] = useState(initialAutosave.value !== null);
   const [compactWorkspace, setCompactWorkspace] = useState(isCompactWorkspace);
   const [inventoryCollapsed, setInventoryCollapsed] = useState(isCompactWorkspace);
   const [propertiesCollapsed, setPropertiesCollapsed] = useState(isCompactWorkspace);
   const [hierarchyCollapsed, setHierarchyCollapsed] = useState(isCompactWorkspace);
 
   useEffect(() => {
+    // A failed read must not turn an unknown saved session into an empty autosave.
+    if (initialAutosave.error !== null) {
+      setMessage(`Autosave konnte nicht gelesen werden: ${initialAutosave.error}`);
+      return;
+    }
+    if (restoreOpen) return;
     const timeout = window.setTimeout(() => {
-      const file = buildProjectFile(project, scene, objects);
-      localStorage.setItem(AUTOSAVE_KEY, serializeProject({ project: file.project, scene: file.scene, objects: file.objects }));
+      try {
+        const file = buildProjectFile(project, scene, objects);
+        localStorage.setItem(AUTOSAVE_KEY, serializeProject({ project: file.project, scene: file.scene, objects: file.objects }));
+      } catch (error) {
+        setMessage(error instanceof Error ? `Autosave fehlgeschlagen: ${error.message}` : 'Autosave fehlgeschlagen');
+      }
     }, 450);
     return () => window.clearTimeout(timeout);
-  }, [objects, project, scene]);
+  }, [initialAutosave.error, objects, project, restoreOpen, scene, setMessage]);
 
   useEffect(() => {
     const media = window.matchMedia(TABLET_MEDIA_QUERY);
@@ -63,14 +76,25 @@ export function App({ active = true, onOpenEditorMenu }: { active?: boolean; onO
     return () => media.removeListener(handleChange);
   }, []);
 
+  const removeAutosave = (restoreError = '') => {
+    try { localStorage.removeItem(AUTOSAVE_KEY); }
+    catch (error) {
+      const message = error instanceof Error ? `Autosave konnte nicht entfernt werden: ${error.message}` : 'Autosave konnte nicht entfernt werden';
+      setMessage(restoreError ? `${restoreError} · ${message}` : message);
+    }
+  };
   const restore = () => {
-    if (!initialAutosave) { setRestoreOpen(false); return; }
-    try { loadProject(deserializeProject(initialAutosave)); }
-    catch (error) { setMessage(error instanceof Error ? `Autosave ungültig: ${error.message}` : 'Autosave ungültig'); localStorage.removeItem(AUTOSAVE_KEY); }
+    if (initialAutosave.value === null) { setRestoreOpen(false); return; }
+    try { loadProject(deserializeProject(initialAutosave.value)); }
+    catch (error) {
+      const message = error instanceof Error ? `Autosave ungültig: ${error.message}` : 'Autosave ungültig';
+      setMessage(message);
+      removeAutosave(message);
+    }
     setRestoreOpen(false);
   };
 
-  const discard = () => { localStorage.removeItem(AUTOSAVE_KEY); setRestoreOpen(false); };
+  const discard = () => { removeAutosave(); setRestoreOpen(false); };
   const toggleInventory = (): void => {
     if (compactWorkspace && inventoryCollapsed) setPropertiesCollapsed(true);
     setInventoryCollapsed(!inventoryCollapsed);

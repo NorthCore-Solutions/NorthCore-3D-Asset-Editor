@@ -1,0 +1,1150 @@
+{
+  "fixtureVersion": 1,
+  "provenance": "synthetic format coverage; renderer SHA-256 baselines recorded from current Legacy implementation. Existing Dart goldens remain the independent oracle.",
+  "cases": [
+    {
+      "id": "move-region",
+      "category": 4,
+      "definition": {
+        "version": 2,
+        "faceRigVersion": 2,
+        "id": "move-region",
+        "name": "move-region",
+        "basePose": "fino_standing_neutral.png",
+        "reactionState": null,
+        "frames": [
+          {
+            "durationMs": 37,
+            "ops": [
+              {
+                "type": "moveRegion",
+                "rect": {
+                  "x": 520,
+                  "y": 285,
+                  "width": 32,
+                  "height": 24
+                },
+                "dx": 3,
+                "dy": -2
+              }
+            ]
+          }
+        ]
+      },
+      "renderContexts": [
+        {
+          "addonRoot": "addons_normalized",
+          "expectedRgbaSha256": "35c07def7cd1a1bda32381031417740fed8c1ab9db02080318eb3ea2ba937b01"
+        }
+      ]
+    },
+    {
+      "id": "move-rect-transparent-string",
+      "category": 4,
+      "definition": {
+        "version": 2,
+        "faceRigVersion": 2,
+        "id": "move-rect-transparent-string",
+        "name": "move-rect-transparent-string",
+        "basePose": "fino_standing_neutral.png",
+        "reactionState": null,
+        "frames": [
+          {
+            "durationMs": 41,
+            "ops": [
+              {
+                "type": "moveSelection",
+                "mask": {
+                  "type": "rect",
+                  "x": 520,
+                  "y": 285,
+                  "width": 32,
+                  "height": 24
+                },
+                "dx": 3,
+                "dy": -2,
+                "vacatedArea": "transparent"
+              }
+            ]
+          }
+        ]
+      },
+      "renderContexts": [
+        {
+          "addonRoot": "addons_normalized",
+          "expectedRgbaSha256": "35c07def7cd1a1bda32381031417740fed8c1ab9db02080318eb3ea2ba937b01"
+        }
+      ]
+    },
+    {
+      "id": "move-rect-transparent-object",
+      "category": 4,
+      "definition": {
+        "version": 2,
+        "faceRigVersion": 2,
+        "id": "move-rect-transparent-object",
+        "name": "move-rect-transparent-object",
+        "basePose": "fino_standing_neutral.png",
+        "reactionState": null,
+        "frames": [
+          {
+            "durationMs": 41,
+            "ops": [
+              {
+                "type": "moveSelection",
+                "mask": {
+                  "type": "rect",
+                  "x": 520,
+                  "y": 285,
+                  "width": 32,
+                  "height": 24
+                },
+                "dx": 3,
+                "dy": -2,
+                "vacatedArea": {
+                  "strategy": "transparent"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "renderContexts": [
+        {
+          "addonRoot": "addons_normalized",
+          "expectedRgbaSha256": "35c07def7cd1a1bda32381031417740fed8c1ab9db02080318eb3ea2ba937b01"
+        }
+      ]
+    },
+    {
+      "id": "move-rect-restoreOriginal-string",
+      "category": 4,
+      "definition": {
+        "version": 2,
+        "faceRigVersion": 2,
+        "id": "move-rect-restoreOriginal-string",
+        "name": "move-rect-restoreOriginal-string",
+        "basePose": "fino_standing_neutral.png",
+        "reactionState": null,
+        "frames": [
+          {
+            "durationMs": 41,
+            "ops": [
+              {
+                "type": "moveSelection",
+                "mask": {
+                  "type": "rect",
+                  "x": 520,
+                  "y": 285,
+                  "width": 32,
+                  "height": 24
+                },
+                "dx": 3,
+                "dy": -2,
+                "vacatedArea": "restoreOriginal"
+              }
+            ]
+          }
+        ]
+      },
+      "renderContexts": [
+        {
+          "addonRoot": "addons_normalized",
+          "expectedRgbaSha256": "920e6fe325ab32425058e863dbe75d2a85265181ac8a814b6d2a9a3c0ddd6e2e"
+        }
+      ]
+    },
+    {
+      "id": "move-rect-restoreOriginal-object",
+      "category": 4,
+      "definition": {
+        "version": 2,
+        "faceRigVersion": 2,
+        "id": "move-rect-restoreOriginal-object",
+        "name": "move-rect-restoreOriginal-object",
+        "basePose": "fino_standing_neutral.png",
+        "reactionState": null,
+        "frames": [
+          {
+            "durationMs": 41,
+            "ops": [
+              {
+                "type": "moveSelection",
+                "mask": {
+                  "type": "rect",
+                  "x": 520,
+                  "y": 285,
+                  "width": 32,
+                  "height": 24
+                },
+                "dx": 3,
+                "dy": -2,
+                "vacatedArea": {
+                  "strategy": "restoreOriginal"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "renderContexts": [
+        {
+          "addonRoot": "addons_normalized",
+          "expectedRgbaSha256": "920e6fe325ab32425058e863dbe75d2a85265181ac8a814b6d2a9a3c0ddd6e2e"
+        }
+      ]
+    },
+    {
+      "id": "move-rect-extendSelectionEdge-string",
+      "category": 4,
+      "definition": {
+        "version": 2,
+        "faceRigVersion": 2,
+        "id": "move-rect-extendSelectionEdge-string",
+        "name": "move-rect-extendSelectionEdge-string",
+        "basePose": "fino_standing_neutral.png",
+        "reactionState": null,
+        "frames": [
+          {
+            "durationMs": 41,
+            "ops": [
+              {
+                "type": "moveSelection",
+                "mask": {
+                  "type": "rect",
+                  "x": 520,
+                  "y": 285,
+                  "width": 32,
+                  "height": 24
+                },
+                "dx": 3,
+                "dy": -2,
+                "vacatedArea": "extendSelectionEdge"
+              }
+            ]
+          }
+        ]
+      },
+      "renderContexts": [
+        {
+          "addonRoot": "addons_normalized",
+          "expectedRgbaSha256": "97f52b2fd306a93658aabb3043b77c13b10d48727cac9589fcab5da7d78e8370"
+        }
+      ]
+    },
+    {
+      "id": "move-rect-extendSelectionEdge-object",
+      "category": 4,
+      "definition": {
+        "version": 2,
+        "faceRigVersion": 2,
+        "id": "move-rect-extendSelectionEdge-object",
+        "name": "move-rect-extendSelectionEdge-object",
+        "basePose": "fino_standing_neutral.png",
+        "reactionState": null,
+        "frames": [
+          {
+            "durationMs": 41,
+            "ops": [
+              {
+                "type": "moveSelection",
+                "mask": {
+                  "type": "rect",
+                  "x": 520,
+                  "y": 285,
+                  "width": 32,
+                  "height": 24
+                },
+                "dx": 3,
+                "dy": -2,
+                "vacatedArea": {
+                  "strategy": "extendSelectionEdge"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "renderContexts": [
+        {
+          "addonRoot": "addons_normalized",
+          "expectedRgbaSha256": "97f52b2fd306a93658aabb3043b77c13b10d48727cac9589fcab5da7d78e8370"
+        }
+      ]
+    },
+    {
+      "id": "stretch-rect-bounds",
+      "category": 4,
+      "definition": {
+        "version": 2,
+        "faceRigVersion": 2,
+        "id": "stretch-rect-bounds",
+        "name": "stretch-rect-bounds",
+        "basePose": "fino_standing_neutral.png",
+        "reactionState": null,
+        "frames": [
+          {
+            "durationMs": 43,
+            "ops": [
+              {
+                "type": "stretchSelection",
+                "mask": {
+                  "type": "rect",
+                  "x": 520,
+                  "y": 285,
+                  "width": 32,
+                  "height": 24
+                },
+                "sx": 2,
+                "sy": -1,
+                "scope": "bounds"
+              }
+            ]
+          }
+        ]
+      },
+      "renderContexts": [
+        {
+          "addonRoot": "addons_normalized",
+          "expectedRgbaSha256": "c3f49b97b27058c9e322561817030fbd0979c100c62f91c70dd43966d915816d"
+        }
+      ]
+    },
+    {
+      "id": "stretch-rect-boundsLocal",
+      "category": 4,
+      "definition": {
+        "version": 2,
+        "faceRigVersion": 2,
+        "id": "stretch-rect-boundsLocal",
+        "name": "stretch-rect-boundsLocal",
+        "basePose": "fino_standing_neutral.png",
+        "reactionState": null,
+        "frames": [
+          {
+            "durationMs": 43,
+            "ops": [
+              {
+                "type": "stretchSelection",
+                "mask": {
+                  "type": "rect",
+                  "x": 520,
+                  "y": 285,
+                  "width": 32,
+                  "height": 24
+                },
+                "sx": 2,
+                "sy": -1,
+                "scope": "boundsLocal"
+              }
+            ]
+          }
+        ]
+      },
+      "renderContexts": [
+        {
+          "addonRoot": "addons_normalized",
+          "expectedRgbaSha256": "d03aebd56f61a522cba222de68f82e26f2f9545bbcbef401639695db598d171b"
+        }
+      ]
+    },
+    {
+      "id": "move-polygon-transparent-string",
+      "category": 4,
+      "definition": {
+        "version": 2,
+        "faceRigVersion": 2,
+        "id": "move-polygon-transparent-string",
+        "name": "move-polygon-transparent-string",
+        "basePose": "fino_standing_neutral.png",
+        "reactionState": null,
+        "frames": [
+          {
+            "durationMs": 41,
+            "ops": [
+              {
+                "type": "moveSelection",
+                "mask": {
+                  "type": "polygon",
+                  "points": [
+                    [
+                      520,
+                      285
+                    ],
+                    [
+                      552,
+                      285
+                    ],
+                    [
+                      540,
+                      309
+                    ],
+                    [
+                      520,
+                      300
+                    ]
+                  ]
+                },
+                "dx": 3,
+                "dy": -2,
+                "vacatedArea": "transparent"
+              }
+            ]
+          }
+        ]
+      },
+      "renderContexts": [
+        {
+          "addonRoot": "addons_normalized",
+          "expectedRgbaSha256": "cec1828a28d7102744a84fba1729e85a9e1f5b9bc50dc82d91e7bf3084030ac4"
+        }
+      ]
+    },
+    {
+      "id": "move-polygon-transparent-object",
+      "category": 4,
+      "definition": {
+        "version": 2,
+        "faceRigVersion": 2,
+        "id": "move-polygon-transparent-object",
+        "name": "move-polygon-transparent-object",
+        "basePose": "fino_standing_neutral.png",
+        "reactionState": null,
+        "frames": [
+          {
+            "durationMs": 41,
+            "ops": [
+              {
+                "type": "moveSelection",
+                "mask": {
+                  "type": "polygon",
+                  "points": [
+                    [
+                      520,
+                      285
+                    ],
+                    [
+                      552,
+                      285
+                    ],
+                    [
+                      540,
+                      309
+                    ],
+                    [
+                      520,
+                      300
+                    ]
+                  ]
+                },
+                "dx": 3,
+                "dy": -2,
+                "vacatedArea": {
+                  "strategy": "transparent"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "renderContexts": [
+        {
+          "addonRoot": "addons_normalized",
+          "expectedRgbaSha256": "cec1828a28d7102744a84fba1729e85a9e1f5b9bc50dc82d91e7bf3084030ac4"
+        }
+      ]
+    },
+    {
+      "id": "move-polygon-restoreOriginal-string",
+      "category": 4,
+      "definition": {
+        "version": 2,
+        "faceRigVersion": 2,
+        "id": "move-polygon-restoreOriginal-string",
+        "name": "move-polygon-restoreOriginal-string",
+        "basePose": "fino_standing_neutral.png",
+        "reactionState": null,
+        "frames": [
+          {
+            "durationMs": 41,
+            "ops": [
+              {
+                "type": "moveSelection",
+                "mask": {
+                  "type": "polygon",
+                  "points": [
+                    [
+                      520,
+                      285
+                    ],
+                    [
+                      552,
+                      285
+                    ],
+                    [
+                      540,
+                      309
+                    ],
+                    [
+                      520,
+                      300
+                    ]
+                  ]
+                },
+                "dx": 3,
+                "dy": -2,
+                "vacatedArea": "restoreOriginal"
+              }
+            ]
+          }
+        ]
+      },
+      "renderContexts": [
+        {
+          "addonRoot": "addons_normalized",
+          "expectedRgbaSha256": "c40a43b858c873cc348ec8b1e38926ec1f150593c7372123fa38f22105717c0d"
+        }
+      ]
+    },
+    {
+      "id": "move-polygon-restoreOriginal-object",
+      "category": 4,
+      "definition": {
+        "version": 2,
+        "faceRigVersion": 2,
+        "id": "move-polygon-restoreOriginal-object",
+        "name": "move-polygon-restoreOriginal-object",
+        "basePose": "fino_standing_neutral.png",
+        "reactionState": null,
+        "frames": [
+          {
+            "durationMs": 41,
+            "ops": [
+              {
+                "type": "moveSelection",
+                "mask": {
+                  "type": "polygon",
+                  "points": [
+                    [
+                      520,
+                      285
+                    ],
+                    [
+                      552,
+                      285
+                    ],
+                    [
+                      540,
+                      309
+                    ],
+                    [
+                      520,
+                      300
+                    ]
+                  ]
+                },
+                "dx": 3,
+                "dy": -2,
+                "vacatedArea": {
+                  "strategy": "restoreOriginal"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "renderContexts": [
+        {
+          "addonRoot": "addons_normalized",
+          "expectedRgbaSha256": "c40a43b858c873cc348ec8b1e38926ec1f150593c7372123fa38f22105717c0d"
+        }
+      ]
+    },
+    {
+      "id": "move-polygon-extendSelectionEdge-string",
+      "category": 4,
+      "definition": {
+        "version": 2,
+        "faceRigVersion": 2,
+        "id": "move-polygon-extendSelectionEdge-string",
+        "name": "move-polygon-extendSelectionEdge-string",
+        "basePose": "fino_standing_neutral.png",
+        "reactionState": null,
+        "frames": [
+          {
+            "durationMs": 41,
+            "ops": [
+              {
+                "type": "moveSelection",
+                "mask": {
+                  "type": "polygon",
+                  "points": [
+                    [
+                      520,
+                      285
+                    ],
+                    [
+                      552,
+                      285
+                    ],
+                    [
+                      540,
+                      309
+                    ],
+                    [
+                      520,
+                      300
+                    ]
+                  ]
+                },
+                "dx": 3,
+                "dy": -2,
+                "vacatedArea": "extendSelectionEdge"
+              }
+            ]
+          }
+        ]
+      },
+      "renderContexts": [
+        {
+          "addonRoot": "addons_normalized",
+          "expectedRgbaSha256": "b571113ad307ca5ba19e8326708a3d79ea01a3e599ff33999760a99f2959b612"
+        }
+      ]
+    },
+    {
+      "id": "move-polygon-extendSelectionEdge-object",
+      "category": 4,
+      "definition": {
+        "version": 2,
+        "faceRigVersion": 2,
+        "id": "move-polygon-extendSelectionEdge-object",
+        "name": "move-polygon-extendSelectionEdge-object",
+        "basePose": "fino_standing_neutral.png",
+        "reactionState": null,
+        "frames": [
+          {
+            "durationMs": 41,
+            "ops": [
+              {
+                "type": "moveSelection",
+                "mask": {
+                  "type": "polygon",
+                  "points": [
+                    [
+                      520,
+                      285
+                    ],
+                    [
+                      552,
+                      285
+                    ],
+                    [
+                      540,
+                      309
+                    ],
+                    [
+                      520,
+                      300
+                    ]
+                  ]
+                },
+                "dx": 3,
+                "dy": -2,
+                "vacatedArea": {
+                  "strategy": "extendSelectionEdge"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "renderContexts": [
+        {
+          "addonRoot": "addons_normalized",
+          "expectedRgbaSha256": "b571113ad307ca5ba19e8326708a3d79ea01a3e599ff33999760a99f2959b612"
+        }
+      ]
+    },
+    {
+      "id": "stretch-polygon-bounds",
+      "category": 4,
+      "definition": {
+        "version": 2,
+        "faceRigVersion": 2,
+        "id": "stretch-polygon-bounds",
+        "name": "stretch-polygon-bounds",
+        "basePose": "fino_standing_neutral.png",
+        "reactionState": null,
+        "frames": [
+          {
+            "durationMs": 43,
+            "ops": [
+              {
+                "type": "stretchSelection",
+                "mask": {
+                  "type": "polygon",
+                  "points": [
+                    [
+                      520,
+                      285
+                    ],
+                    [
+                      552,
+                      285
+                    ],
+                    [
+                      540,
+                      309
+                    ],
+                    [
+                      520,
+                      300
+                    ]
+                  ]
+                },
+                "sx": 2,
+                "sy": -1,
+                "scope": "bounds"
+              }
+            ]
+          }
+        ]
+      },
+      "renderContexts": [
+        {
+          "addonRoot": "addons_normalized",
+          "expectedRgbaSha256": "39ff996e136303ba10cfe8fd3c9617d72f3b3a8fdf07fee3821e4b2f8a012b05"
+        }
+      ]
+    },
+    {
+      "id": "stretch-polygon-boundsLocal",
+      "category": 4,
+      "definition": {
+        "version": 2,
+        "faceRigVersion": 2,
+        "id": "stretch-polygon-boundsLocal",
+        "name": "stretch-polygon-boundsLocal",
+        "basePose": "fino_standing_neutral.png",
+        "reactionState": null,
+        "frames": [
+          {
+            "durationMs": 43,
+            "ops": [
+              {
+                "type": "stretchSelection",
+                "mask": {
+                  "type": "polygon",
+                  "points": [
+                    [
+                      520,
+                      285
+                    ],
+                    [
+                      552,
+                      285
+                    ],
+                    [
+                      540,
+                      309
+                    ],
+                    [
+                      520,
+                      300
+                    ]
+                  ]
+                },
+                "sx": 2,
+                "sy": -1,
+                "scope": "boundsLocal"
+              }
+            ]
+          }
+        ]
+      },
+      "renderContexts": [
+        {
+          "addonRoot": "addons_normalized",
+          "expectedRgbaSha256": "e487144c46080a8bd06df4461a34293ad752384da2d7c3a34bae6d15265981fa"
+        }
+      ]
+    },
+    {
+      "id": "operation-defaults",
+      "category": 4,
+      "definition": {
+        "version": 2,
+        "faceRigVersion": 2,
+        "id": "operation-defaults",
+        "name": "operation-defaults",
+        "basePose": "fino_standing_neutral.png",
+        "reactionState": null,
+        "frames": [
+          {
+            "durationMs": 45,
+            "ops": [
+              {
+                "type": "moveRegion",
+                "rect": {
+                  "x": 520,
+                  "y": 285,
+                  "width": 32,
+                  "height": 24
+                }
+              },
+              {
+                "type": "moveSelection",
+                "mask": {
+                  "type": "polygon",
+                  "points": [
+                    [
+                      520,
+                      285
+                    ],
+                    [
+                      552,
+                      285
+                    ],
+                    [
+                      540,
+                      309
+                    ],
+                    [
+                      520,
+                      300
+                    ]
+                  ]
+                }
+              },
+              {
+                "type": "stretchSelection",
+                "mask": {
+                  "type": "polygon",
+                  "points": [
+                    [
+                      520,
+                      285
+                    ],
+                    [
+                      552,
+                      285
+                    ],
+                    [
+                      540,
+                      309
+                    ],
+                    [
+                      520,
+                      300
+                    ]
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "renderContexts": [
+        {
+          "addonRoot": "addons_normalized",
+          "expectedRgbaSha256": "3ed28cf2c501a5ce77ffdebe75fb165a12aeb4276e69c1095968e310db64aed6"
+        }
+      ]
+    },
+    {
+      "id": "layers-faces-and-addons",
+      "category": 4,
+      "definition": {
+        "version": 2,
+        "faceRigVersion": 2,
+        "id": "layers-faces-and-addons",
+        "name": "layers-faces-and-addons",
+        "basePose": "fino_standing_neutral.png",
+        "reactionState": null,
+        "frames": [
+          {
+            "durationMs": 47,
+            "ops": [],
+            "eyes": "half",
+            "mouth": {
+              "state": "smile",
+              "dx": -4,
+              "dy": 8
+            },
+            "face": {
+              "leftEye": {
+                "state": "open",
+                "x": 598,
+                "y": 142,
+                "width": 44,
+                "height": 40
+              },
+              "rightEye": {
+                "state": "closed",
+                "x": -2,
+                "y": 20,
+                "width": 33,
+                "height": 29,
+                "visible": false
+              },
+              "mouth": {
+                "state": "neutral",
+                "x": 686,
+                "y": 170,
+                "width": 116,
+                "height": 78,
+                "visible": true
+              }
+            },
+            "layers": [
+              {
+                "id": "base",
+                "name": "Base",
+                "kind": "base",
+                "visible": true,
+                "locked": true
+              },
+              {
+                "id": "eye",
+                "name": "Eye",
+                "kind": "leftEye"
+              },
+              {
+                "id": "right",
+                "name": "Hidden",
+                "kind": "rightEye",
+                "visible": false
+              },
+              {
+                "id": "mouth",
+                "name": "Mouth",
+                "kind": "mouth",
+                "locked": false
+              },
+              {
+                "id": "paint",
+                "name": "Pixels",
+                "kind": "pixels",
+                "visible": true,
+                "locked": false,
+                "pixels": [
+                  {
+                    "x": 0,
+                    "y": 0,
+                    "rgba": 305419777
+                  },
+                  {
+                    "x": 0,
+                    "y": 0,
+                    "rgba": 2882400128
+                  },
+                  {
+                    "x": 1023,
+                    "y": 1023,
+                    "rgba": 2882400000
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "renderContexts": [
+        {
+          "addonRoot": "addons",
+          "expectedRgbaSha256": "d6f4dee50bfb46900ec4700c80e36dae241bd2f29fe3dea3f908efc6a09900a2"
+        },
+        {
+          "addonRoot": "addons_cleaned",
+          "expectedRgbaSha256": "e94ccb8835c6928528f40048a8a4cb71b6c35e9ba173ee1bc8b806d4476878cd"
+        },
+        {
+          "addonRoot": "addons_normalized",
+          "expectedRgbaSha256": "5c48e8cff4a550f0b28895df2b365b354bfdf72af490fdc96d104b78256fa238"
+        }
+      ]
+    },
+    {
+      "id": "empty-layers-null-addons-v1",
+      "category": 4,
+      "definition": {
+        "version": 2,
+        "faceRigVersion": 1,
+        "id": "empty-layers-null-addons-v1",
+        "name": "empty-layers-null-addons-v1",
+        "basePose": "fino_standing_neutral.png",
+        "reactionState": null,
+        "frames": [
+          {
+            "durationMs": 49,
+            "ops": [],
+            "layers": [],
+            "eyes": null,
+            "mouth": null
+          }
+        ]
+      },
+      "renderContexts": [
+        {
+          "addonRoot": "addons_normalized",
+          "expectedRgbaSha256": "720f6bb709c215736e5b9557b208dcad1572540a8fc2d3a9ee3e7e024f10a12d"
+        }
+      ]
+    },
+    {
+      "id": "missing-rig-version-and-reaction",
+      "category": 4,
+      "definition": {
+        "version": 1,
+        "id": "missing-rig-version-and-reaction",
+        "name": "Defaults",
+        "basePose": "fino_standing_neutral.png",
+        "frames": [
+          {
+            "durationMs": 51,
+            "ops": []
+          }
+        ]
+      },
+      "renderContexts": [
+        {
+          "addonRoot": "addons_normalized",
+          "expectedRgbaSha256": "720f6bb709c215736e5b9557b208dcad1572540a8fc2d3a9ee3e7e024f10a12d"
+        }
+      ]
+    }
+  ],
+  "templateLibrary": {
+    "version": 1,
+    "templates": [
+      {
+        "id": "sparse-low-alpha",
+        "name": "Sparse",
+        "width": 16,
+        "height": 8,
+        "originX": 520,
+        "originY": 285,
+        "pixels": [
+          {
+            "x": 0,
+            "y": 0,
+            "rgba": 305419777
+          },
+          {
+            "x": 15,
+            "y": 7,
+            "rgba": 2882400000
+          }
+        ]
+      },
+      {
+        "id": "negative-origin",
+        "name": "Outside",
+        "width": 1,
+        "height": 1,
+        "originX": -3,
+        "originY": 1024,
+        "pixels": [
+          {
+            "x": 0,
+            "y": 0,
+            "rgba": 4294967295
+          }
+        ]
+      }
+    ]
+  },
+  "assessments": [
+    {
+      "id": "unknown-operation",
+      "status": "unknown",
+      "category": 3,
+      "reason": "current renderer skips with warning; no successful migration may be claimed",
+      "definition": {
+        "version": 2,
+        "faceRigVersion": 2,
+        "id": "unknown-operation",
+        "name": "unknown-operation",
+        "basePose": "fino_standing_neutral.png",
+        "reactionState": null,
+        "frames": [
+          {
+            "durationMs": 1,
+            "ops": [
+              {
+                "type": "futureOperation",
+                "futureSetting": 7
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "unknown-fields-and-version",
+      "status": "unknown",
+      "category": 3,
+      "reason": "version and additional metadata not fully validated by current parser",
+      "definition": {
+        "version": 99,
+        "faceRigVersion": 2,
+        "id": "unknown-fields-and-version",
+        "name": "unknown-fields-and-version",
+        "basePose": "fino_standing_neutral.png",
+        "reactionState": null,
+        "frames": [
+          {
+            "durationMs": 1,
+            "ops": []
+          }
+        ],
+        "futureMetadata": {
+          "preserve": true
+        }
+      }
+    },
+    {
+      "id": "missing-addon-context",
+      "status": "ambiguous",
+      "category": 3,
+      "reason": "addonRoot is not serialized; selected asset family cannot be recovered from JSON alone",
+      "definition": {
+        "version": 2,
+        "faceRigVersion": 2,
+        "id": "missing-addon-context",
+        "name": "missing-addon-context",
+        "basePose": "fino_standing_neutral.png",
+        "reactionState": null,
+        "frames": [
+          {
+            "durationMs": 1,
+            "ops": [],
+            "eyes": "open"
+          }
+        ]
+      }
+    },
+    {
+      "id": "missing-asset-state",
+      "status": "blocked",
+      "category": 3,
+      "reason": "syntactically accepted state has no matching bundled asset",
+      "definition": {
+        "version": 2,
+        "faceRigVersion": 2,
+        "id": "missing-asset-state",
+        "name": "missing-asset-state",
+        "basePose": "fino_standing_neutral.png",
+        "reactionState": null,
+        "frames": [
+          {
+            "durationMs": 1,
+            "ops": [],
+            "mouth": "unavailable"
+          }
+        ]
+      }
+    }
+  ]
+}

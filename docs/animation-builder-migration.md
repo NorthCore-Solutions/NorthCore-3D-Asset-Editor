@@ -9,10 +9,11 @@ Die Quelle wurde nur gelesen. Es wurden keine Dateien dort verändert, verschobe
 - `src/app/EditorLauncher.tsx` öffnet Asset Editor oder Animation Builder.
 - Der bestehende 3D-Editor behält seinen Zustand, seine History und sein Dateiziel beim Wechsel.
   Sein Viewport und seine Tastenkürzel werden im anderen Editor deaktiviert.
-- `src/animation/BuilderModule.tsx` verbindet Raster128 und den weiterhin erreichbaren Legacy1024-Pfad.
-  Beide sind React-Oberflächen in derselben Anwendung, ohne Flutter, iframe oder weiteren Prozess.
+- `src/animation/AnimationBuilder.tsx` wird direkt vom Launcher als Raster128-Editor geladen.
+  Legacy-Benutzerdaten sind über die unabhängige Import-/Migrationsverwaltung erreichbar.
 - Rastermodell, native Pose, Werkzeuge und Viewport: `raster.ts`, `store.ts`, `RasterCanvas.tsx`.
-- Legacy-Definitionen, Renderer, Rigs und lokale Interaktionen: `legacy.ts`, `legacyStore.ts`, `LegacyCanvas.tsx`.
+- Legacy-Format und Renderer: `legacy.ts`; Audit, Konvertierung, Archiv und Journal:
+  `migration/`. Diese Kompatibilitätsschicht besitzt keinen Authoring-Store oder Canvas.
 - Plattformdateien verwenden weiterhin `src/platform/nativeFileDialog.ts`.
   Der einmalige Start von `initializeLiveUpdates()` liegt im Launcher; es gibt kein zweites Update-System.
 - Lokale Builder-Sitzungen und die Legacy-Vorlagenbibliothek liegen in einer eigenen IndexedDB.
@@ -31,15 +32,14 @@ Die Quelle wurde nur gelesen. Es wurden keine Dateien dort verändert, verschobe
 | Layer | Sichtbarkeit, Sperre, Reihenfolge, Namen, freie Pixel-Layer, native Face-Assets |
 | Vorlagen | Auswahl direkt aus Rasterdaten; normale Vorlage **oder** Face-Asset; separate Collections und Namenskollisionen; unveränderte Originale beim Einfügen/Skalieren |
 | Animation | Leere/kopierte Frames, Dauer, Wiedergabe, Timeline, neue Animation, lokale Sicherung, PNG-Export |
-| Legacy | Sechs Posen, V1/V2-Rigs, ganze Addon-Overlays, Retargeting, Original-JSON, Move-Strategien, beide Stretch-Modi, Layer, Auswahl, Face-Grab und proportionale Eckgriffe |
+| Legacy-Import | Bestehende Definitionen mit Posen, V1/V2-Rigs, Addons, Operations und Pixel-Layern prüfen/konvertieren; unveränderliches Originalarchiv, Freigabe, Journal und Wiederaufnahme |
 | Dialoge | Gemeinsamer Dialog mit Enter für die validierte primäre Aktion und Escape zum Abbrechen; HSV/Alpha/Hex-Farbauswahl |
 | Bedienung | Maus/Touch/Pen über Pointer Events, Wheel/Touchpad und Pinch über dieselbe Ankerabbildung; Panels als Overlays |
 
 Strokes und Face-/Auswahl-Drags ändern nur ihre lokale Vorschau, bis die Geste endet.
 Ein Stroke erzeugt einen History-Eintrag. Native Frame-Bilder werden nach unveränderlicher
-Frame-Identität gecacht. Legacy verwendet einen begrenzten Asset- und Frame-Cache;
-veraltete Renderantworten dürfen die aktuelle Anzeige nicht ersetzen.
-Die Live-Vorschau sampelt die vorbereitete Layer-Szene statt pro Pointer-Move einen Full-Render zu starten.
+Frame-Identität gecacht. Legacy-Konvertierung verwendet geprüfte, injizierte Ressourcen
+ohne Authoring-Cache oder Live-Pointer-Vorschau.
 
 ## Kopierte Assets und gemeinsame Abhängigkeiten
 
@@ -47,7 +47,6 @@ Die Live-Vorschau sampelt die vorbereitete Layer-Szene statt pro Pointer-Move ei
 - `public/animation/legacy/`: 74 Dateien aus `assets/fino_assets_complete/`:
   `basis`, `basis_face_base`, `addons`, `addons_cleaned`, `addons_normalized`, `addons_rig`, `addons_rig_v2`.
   Originale, Kalibrierungen und Manifestdaten sind unverändert.
-- `public/animation/animations/`: `idle_breathing.finoanim.json` und `idle_double_blink.finoanim.json`.
 - `src/animation/data/standing-neutral.json`: native Geometrie/Palette.
 - `src/animation/data/legacy-presets.json`: aus den bestehenden Dart-Presets extrahiert, nicht neu kalibriert.
 
@@ -73,13 +72,18 @@ Die Browser-Tests verwenden lokal installiertes Microsoft Edge und starten bei B
 - `animationRaster.test.ts`: bytegleiche native Pose zur Dart-Ausgabe, Brush-Größen/Anker,
   lückenlose Strokes, History, Zoom, Referenz-Sampling, Collections und 8×-RGBA-Blöcke.
 - `animationLegacy.test.ts`: gespeicherte Dart-Render-Hashes aller sechs Posen mit V1/V2,
-  Pixeloperationen und sämtlichen Frames der beiden Beispielanimationen.
-- `animationInteraction.test.ts`: Vorschau = Commit für Legacy-Eraser/Face inklusive Alpha/Reihenfolge,
-  proportionale Eckgriffe, stabile Originale, Quellenwechsel, Layer/Selection und PNG-/Bibliotheksdaten.
+  Pixeloperationen. Repo-Beispiele und ihre Golden-Einträge wurden inzwischen entfernt.
+- `animationInteraction.test.ts`: Raster-Quellenwechsel, Layer/Selection und PNG-/Bibliotheksdaten.
+- `legacyIndependence.test.ts`: gelöschte Authoring-Dateien, sämtliche Produktions-/Testimports,
+  transitive Einstiege und Android-Workflow; `scripts/check-legacy-authoring.mjs`: Produktionsbundle.
 - `tests/browser/animation.spec.ts`: Desktop, Tablet, Touch/Pinch, Dialoge, Referenzen,
   gemeinsame App-Navigation und Regression des bestehenden 3D-Editors.
 
-## Ergebnis der Abschlussprüfung (1. Oktober 2026)
+## Historisches Ergebnis der Portierungsprüfung (1. Oktober 2026)
+
+Die folgende Prüfung beschreibt den damaligen Portierungsstand. Der Legacy-Editor
+und seine Authoring-Tests wurden am 4. Oktober in Schritt 12b entfernt; aktuelle
+Import-/Kompatibilitätstests und die Renderer-Goldens bleiben erhalten.
 
 - Gesamte Vitest-Suite: **561 Tests in 42 Dateien erfolgreich**.
 - Sechs Edge-Browsertests: Maus-Strokes/History, getrennte Brush-Größen,

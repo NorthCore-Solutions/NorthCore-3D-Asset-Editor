@@ -1,0 +1,2361 @@
+{
+  "inventoryVersion": 1,
+  "knownFormatVersions": {
+    "definition": [
+      1,
+      2
+    ],
+    "library": [
+      1
+    ]
+  },
+  "status": "reviewed-current-working-tree",
+  "categories": {
+    "1": "direct lossless transfer",
+    "2": "deterministic conversion with stated preconditions",
+    "3": "native Raster128 extension required",
+    "4": "rasterized result; structure and possibly 1024 detail lost"
+  },
+  "target": {
+    "logicalSize": 128,
+    "outputSize": 1024,
+    "scale": 8,
+    "coordinates": "integer",
+    "rgba": "exact unsigned 0xRRGGBBAA",
+    "antialiasing": false,
+    "compositing": "literal topmost RGBA"
+  },
+  "families": [
+    {
+      "id": "basis",
+      "count": 6,
+      "role": "pose-base",
+      "category": 4
+    },
+    {
+      "id": "basis_face_base",
+      "count": 6,
+      "role": "face-free-pose-base",
+      "category": 4
+    },
+    {
+      "id": "addons",
+      "count": 10,
+      "role": "whole-eye-or-mouth-overlay",
+      "category": 4
+    },
+    {
+      "id": "addons_cleaned",
+      "count": 10,
+      "role": "whole-eye-or-mouth-overlay",
+      "category": 4
+    },
+    {
+      "id": "addons_normalized",
+      "count": 10,
+      "role": "whole-eye-or-mouth-overlay",
+      "category": 4
+    },
+    {
+      "id": "addons_rig",
+      "count": 16,
+      "role": "rig-v1-sprites-and-manifest",
+      "category": 3
+    },
+    {
+      "id": "addons_rig_v2",
+      "count": 16,
+      "role": "rig-v2-sprites-and-manifest",
+      "category": 3
+    }
+  ],
+  "assets": [
+    {
+      "path": "public/animation/legacy/addons/eyes/fino_eyes_closed.png",
+      "family": "addons",
+      "role": "whole-eye-overlay",
+      "category": 4,
+      "sha256": "bbff33f8ad9869b5d65b5a5e618d4deac3d1732596fe92312ff15e510ec48a2e",
+      "part": "eyes",
+      "state": "closed",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 8580,
+        "nonUniform8Blocks": 188
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons/eyes/fino_eyes_half.png",
+      "family": "addons",
+      "role": "whole-eye-overlay",
+      "category": 4,
+      "sha256": "567131e5da8ea0de619cdacc58603a59a94f759c2df5e0f072cb4f201fe745e0",
+      "part": "eyes",
+      "state": "half",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 10366,
+        "nonUniform8Blocks": 207
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons/eyes/fino_eyes_happy.png",
+      "family": "addons",
+      "role": "whole-eye-overlay",
+      "category": 4,
+      "sha256": "15f99cc5ad007eac71a58605ea263cc18e412cb09dee8e1aab59edaff8d6ad17",
+      "part": "eyes",
+      "state": "happy",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 6975,
+        "nonUniform8Blocks": 170
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons/eyes/fino_eyes_open.png",
+      "family": "addons",
+      "role": "whole-eye-overlay",
+      "category": 4,
+      "sha256": "c3ac5325d7ab1238659ff2e63d6ff40a5a9ecc7075b084526514a1cfa2dba8b4",
+      "part": "eyes",
+      "state": "open",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 9142,
+        "nonUniform8Blocks": 182
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons/eyes/fino_eyes_surprised.png",
+      "family": "addons",
+      "role": "whole-eye-overlay",
+      "category": 4,
+      "sha256": "54fee0986bfd4c50ddf77fdc14f971f33de4ba84065a1c3ca12fdbea7daaa1dd",
+      "part": "eyes",
+      "state": "surprised",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 17206,
+        "nonUniform8Blocks": 346
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons/mouths/fino_mouth_chew.png",
+      "family": "addons",
+      "role": "whole-mouth-overlay",
+      "category": 4,
+      "sha256": "b1958ad0bb2cbd4c99aff2ec6a223588aca009cf755a2a38b3356bfb40391381",
+      "part": "mouth",
+      "state": "chew",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 15033,
+        "nonUniform8Blocks": 284
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons/mouths/fino_mouth_neutral.png",
+      "family": "addons",
+      "role": "whole-mouth-overlay",
+      "category": 4,
+      "sha256": "09d0a2eb84816275f5d5dcf3e09b63f892d1452219601ea7654b52edc56b05a1",
+      "part": "mouth",
+      "state": "neutral",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 20182,
+        "nonUniform8Blocks": 380
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons/mouths/fino_mouth_open.png",
+      "family": "addons",
+      "role": "whole-mouth-overlay",
+      "category": 4,
+      "sha256": "4658a524163a29c0e0769456e83686af43bbde7413de193274ebedd1fe7e2277",
+      "part": "mouth",
+      "state": "open",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 24761,
+        "nonUniform8Blocks": 449
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons/mouths/fino_mouth_sad.png",
+      "family": "addons",
+      "role": "whole-mouth-overlay",
+      "category": 4,
+      "sha256": "90de44eced6cb1e809cb12fa627760660846b79cceab810b702ab35d35e7bcb3",
+      "part": "mouth",
+      "state": "sad",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 14142,
+        "nonUniform8Blocks": 264
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons/mouths/fino_mouth_smile.png",
+      "family": "addons",
+      "role": "whole-mouth-overlay",
+      "category": 4,
+      "sha256": "2e2a0d36ebdf3c0ad18efc769e8dd61b175dfae57a77dcc2f9ff496a89d25166",
+      "part": "mouth",
+      "state": "smile",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 18133,
+        "nonUniform8Blocks": 359
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_cleaned/eyes/fino_eyes_closed.png",
+      "family": "addons_cleaned",
+      "role": "whole-eye-overlay",
+      "category": 4,
+      "sha256": "ba8662e155e99b3b6679d6e2c185ef60d201779fbe0d641c0bdffc37ad5a58b7",
+      "part": "eyes",
+      "state": "closed",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 8304,
+        "nonUniform8Blocks": 173
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_cleaned/eyes/fino_eyes_half.png",
+      "family": "addons_cleaned",
+      "role": "whole-eye-overlay",
+      "category": 4,
+      "sha256": "e4f9b61908f97ec5fa295415f4a4dd5651e3ca542247aa77fc06ca6d610e8352",
+      "part": "eyes",
+      "state": "half",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 10102,
+        "nonUniform8Blocks": 200
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_cleaned/eyes/fino_eyes_happy.png",
+      "family": "addons_cleaned",
+      "role": "whole-eye-overlay",
+      "category": 4,
+      "sha256": "56e43efeb8a444abe0b2aaa56581d75f4d85f41fe6035693cc2c98bf1875ed72",
+      "part": "eyes",
+      "state": "happy",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 6692,
+        "nonUniform8Blocks": 158
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_cleaned/eyes/fino_eyes_open.png",
+      "family": "addons_cleaned",
+      "role": "whole-eye-overlay",
+      "category": 4,
+      "sha256": "3664bd5668c2ad847b66d12b8540385654c6109ab3ec10500b152b659a28c25b",
+      "part": "eyes",
+      "state": "open",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 9018,
+        "nonUniform8Blocks": 172
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_cleaned/eyes/fino_eyes_surprised.png",
+      "family": "addons_cleaned",
+      "role": "whole-eye-overlay",
+      "category": 4,
+      "sha256": "c5ae848feb3d9f5430e8d2c44fa5e534f718ccda7e1047dc588a17d17da220c6",
+      "part": "eyes",
+      "state": "surprised",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 16803,
+        "nonUniform8Blocks": 334
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_cleaned/mouths/fino_mouth_chew.png",
+      "family": "addons_cleaned",
+      "role": "whole-mouth-overlay",
+      "category": 4,
+      "sha256": "7e9b0c048864672adba09395f3bcb5e0b7b556e58994169728f8994219c85799",
+      "part": "mouth",
+      "state": "chew",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 14718,
+        "nonUniform8Blocks": 264
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_cleaned/mouths/fino_mouth_neutral.png",
+      "family": "addons_cleaned",
+      "role": "whole-mouth-overlay",
+      "category": 4,
+      "sha256": "86f3f545e201348f490b5d8a79b99438605273385d221439eb0d48cfadf8cbf1",
+      "part": "mouth",
+      "state": "neutral",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 19964,
+        "nonUniform8Blocks": 363
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_cleaned/mouths/fino_mouth_open.png",
+      "family": "addons_cleaned",
+      "role": "whole-mouth-overlay",
+      "category": 4,
+      "sha256": "0eaa6fee2ae43de258095554a79f1f70be18f6379aaf36192a90cedd09e8622d",
+      "part": "mouth",
+      "state": "open",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 24541,
+        "nonUniform8Blocks": 439
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_cleaned/mouths/fino_mouth_sad.png",
+      "family": "addons_cleaned",
+      "role": "whole-mouth-overlay",
+      "category": 4,
+      "sha256": "b8f91d27e8b4f5541049dc636720136655e21cbfcf599d1269db541350c5219d",
+      "part": "mouth",
+      "state": "sad",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 13979,
+        "nonUniform8Blocks": 256
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_cleaned/mouths/fino_mouth_smile.png",
+      "family": "addons_cleaned",
+      "role": "whole-mouth-overlay",
+      "category": 4,
+      "sha256": "68bc6334257c6be138fa854e8bb7a89b3255ce959b3c9946ec4c32836b7b526c",
+      "part": "mouth",
+      "state": "smile",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 17565,
+        "nonUniform8Blocks": 338
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_normalized/eyes/fino_eyes_closed.png",
+      "family": "addons_normalized",
+      "role": "whole-eye-overlay",
+      "category": 4,
+      "sha256": "80e6b35b9af14d0b638a75106d92b2be75138df140409beb48efa9cc083710e7",
+      "part": "eyes",
+      "state": "closed",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 2078,
+        "nonUniform8Blocks": 50
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_normalized/eyes/fino_eyes_half.png",
+      "family": "addons_normalized",
+      "role": "whole-eye-overlay",
+      "category": 4,
+      "sha256": "d616a79173d7ff9c92a221f304015dab0843d27f981f7bb76b5919bf2e22761d",
+      "part": "eyes",
+      "state": "half",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 2450,
+        "nonUniform8Blocks": 64
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_normalized/eyes/fino_eyes_happy.png",
+      "family": "addons_normalized",
+      "role": "whole-eye-overlay",
+      "category": 4,
+      "sha256": "50caa1fb8ad0bc604b797fe13ee287ead62ae674f5fdde14acf8b928fc6e2a61",
+      "part": "eyes",
+      "state": "happy",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 1629,
+        "nonUniform8Blocks": 44
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_normalized/eyes/fino_eyes_open.png",
+      "family": "addons_normalized",
+      "role": "whole-eye-overlay",
+      "category": 4,
+      "sha256": "2ae1540444a469bbf274744dff6c1d15e12f2d88233b8793fe02c22246757590",
+      "part": "eyes",
+      "state": "open",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 2191,
+        "nonUniform8Blocks": 51
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_normalized/eyes/fino_eyes_surprised.png",
+      "family": "addons_normalized",
+      "role": "whole-eye-overlay",
+      "category": 4,
+      "sha256": "7e246d5989ade34ddb4ac04db00c3adfc95dc9b4d32c454732520eac26df6f61",
+      "part": "eyes",
+      "state": "surprised",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 4039,
+        "nonUniform8Blocks": 85
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_normalized/mouths/fino_mouth_chew.png",
+      "family": "addons_normalized",
+      "role": "whole-mouth-overlay",
+      "category": 4,
+      "sha256": "51311da8b5073f063f6e11697323c5de9611c7d4e40dd96c88aa969518fa3a39",
+      "part": "mouth",
+      "state": "chew",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 9268,
+        "nonUniform8Blocks": 178
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_normalized/mouths/fino_mouth_neutral.png",
+      "family": "addons_normalized",
+      "role": "whole-mouth-overlay",
+      "category": 4,
+      "sha256": "51ffaf3751c47b020aa27dc05b43677aa107d0ee539c054450a5218ed325127c",
+      "part": "mouth",
+      "state": "neutral",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 12556,
+        "nonUniform8Blocks": 230
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_normalized/mouths/fino_mouth_open.png",
+      "family": "addons_normalized",
+      "role": "whole-mouth-overlay",
+      "category": 4,
+      "sha256": "439ab5603641d621449d0d79fda75a0fce849780f9839c6a3b972c54af08677c",
+      "part": "mouth",
+      "state": "open",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 15658,
+        "nonUniform8Blocks": 288
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_normalized/mouths/fino_mouth_sad.png",
+      "family": "addons_normalized",
+      "role": "whole-mouth-overlay",
+      "category": 4,
+      "sha256": "835c6103b4b10a782416dba6b58528ea4b7e88888f4c4034defcac5d428792e1",
+      "part": "mouth",
+      "state": "sad",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 8728,
+        "nonUniform8Blocks": 158
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_normalized/mouths/fino_mouth_smile.png",
+      "family": "addons_normalized",
+      "role": "whole-mouth-overlay",
+      "category": 4,
+      "sha256": "0e2e427a31f37269ad933dd8f7090c97aa31e177f7bd2f08391b4a371aa26fc8",
+      "part": "mouth",
+      "state": "smile",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 11159,
+        "nonUniform8Blocks": 207
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig/eyes_left/fino_eyes_closed.png",
+      "family": "addons_rig",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "15bc2c22e85ae991b1e4753a4650ceb71ded638270c295a4d79b500d266049e3",
+      "part": "leftEye",
+      "state": "closed",
+      "rigVersion": 1,
+      "png": {
+        "width": 57,
+        "height": 33,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 1347,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig/eyes_left/fino_eyes_half.png",
+      "family": "addons_rig",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "96a5d80055ccacb86c68d02ba3f22b662871144f54f53bc218886479ce3ef01c",
+      "part": "leftEye",
+      "state": "half",
+      "rigVersion": 1,
+      "png": {
+        "width": 47,
+        "height": 46,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 1518,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig/eyes_left/fino_eyes_happy.png",
+      "family": "addons_rig",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "7b9f01d4d5084341ec63932e6db770e7c87aab014d2ecb3b5d52140cdc40048a",
+      "part": "leftEye",
+      "state": "happy",
+      "rigVersion": 1,
+      "png": {
+        "width": 55,
+        "height": 30,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 902,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig/eyes_left/fino_eyes_open.png",
+      "family": "addons_rig",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "d73bd257698efb6c60d9bee81fd955d132b3360c7de01e19bf20ae8f6c6579b1",
+      "part": "leftEye",
+      "state": "open",
+      "rigVersion": 1,
+      "png": {
+        "width": 44,
+        "height": 40,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 1455,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig/eyes_left/fino_eyes_surprised.png",
+      "family": "addons_rig",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "b142ddb3f66347adcb68c0370ea13152ff549568659063c8ce5cce59013d333d",
+      "part": "leftEye",
+      "state": "surprised",
+      "rigVersion": 1,
+      "png": {
+        "width": 49,
+        "height": 69,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 2823,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig/eyes_right/fino_eyes_closed.png",
+      "family": "addons_rig",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "6e63f7ac5d2a354428f5d060b852897253a39ee8cc990ac89376798b2069cee6",
+      "part": "rightEye",
+      "state": "closed",
+      "rigVersion": 1,
+      "png": {
+        "width": 33,
+        "height": 29,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 665,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig/eyes_right/fino_eyes_half.png",
+      "family": "addons_rig",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "368074ec526b562cdc82d988f6018b1852c339f0731d1c419e3124278a039fd6",
+      "part": "rightEye",
+      "state": "half",
+      "rigVersion": 1,
+      "png": {
+        "width": 33,
+        "height": 39,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 906,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig/eyes_right/fino_eyes_happy.png",
+      "family": "addons_rig",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "2ed7eb5033c921d7378f24ed7fe054d91ef548ac76d2caf64b87d2405fcfb5b2",
+      "part": "rightEye",
+      "state": "happy",
+      "rigVersion": 1,
+      "png": {
+        "width": 41,
+        "height": 30,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 688,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig/eyes_right/fino_eyes_open.png",
+      "family": "addons_rig",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "a2f856619448a8ae75961084beebe8c2453d29288c2a744a8e4629782ab643ef",
+      "part": "rightEye",
+      "state": "open",
+      "rigVersion": 1,
+      "png": {
+        "width": 27,
+        "height": 32,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 718,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig/eyes_right/fino_eyes_surprised.png",
+      "family": "addons_rig",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "a6f6bcdf3dcf05613664ce1d0d19770466da3758da363b7cbe2033293148e1ec",
+      "part": "rightEye",
+      "state": "surprised",
+      "rigVersion": 1,
+      "png": {
+        "width": 27,
+        "height": 53,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 1145,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig/mouths/fino_mouth_chew.png",
+      "family": "addons_rig",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "dc54201dc90a6f91769f4be4178df6337025b51d6f7d862b848b3d28cff48fc7",
+      "part": "mouth",
+      "state": "chew",
+      "rigVersion": 1,
+      "png": {
+        "width": 134,
+        "height": 89,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 9268,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig/mouths/fino_mouth_neutral.png",
+      "family": "addons_rig",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "a0f8946d03fbf976a499b1c3a6a6441aa6056009f6aa6e208cae627cbce3124a",
+      "part": "mouth",
+      "state": "neutral",
+      "rigVersion": 1,
+      "png": {
+        "width": 173,
+        "height": 100,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 12556,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig/mouths/fino_mouth_open.png",
+      "family": "addons_rig",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "3cd9acae3447ded3cfb779ebebfae16965b551c80d4fc2a8ef4324fe7876336a",
+      "part": "mouth",
+      "state": "open",
+      "rigVersion": 1,
+      "png": {
+        "width": 158,
+        "height": 154,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 15658,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig/mouths/fino_mouth_sad.png",
+      "family": "addons_rig",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "a120118cd4cb42e56ebcaf2baf467f950ce452551c377728d087be5fec1845a0",
+      "part": "mouth",
+      "state": "sad",
+      "rigVersion": 1,
+      "png": {
+        "width": 125,
+        "height": 93,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 8728,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig/mouths/fino_mouth_smile.png",
+      "family": "addons_rig",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "e8b7f3391ffaac41e830219404890ebe24d034cadb9a1405ebfd44ba85f29ef4",
+      "part": "mouth",
+      "state": "smile",
+      "rigVersion": 1,
+      "png": {
+        "width": 160,
+        "height": 91,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 11159,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig/rig.json",
+      "family": "addons_rig",
+      "role": "rig-manifest",
+      "category": 3,
+      "sha256": "00124a3ae45f1da9aa36bac8c741c9695426e56db901e09cd7143e3c496e66ce",
+      "rigVersion": 1
+    },
+    {
+      "path": "public/animation/legacy/addons_rig_v2/eyes_left/fino_eyes_closed.png",
+      "family": "addons_rig_v2",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "15bc2c22e85ae991b1e4753a4650ceb71ded638270c295a4d79b500d266049e3",
+      "part": "leftEye",
+      "state": "closed",
+      "rigVersion": 2,
+      "png": {
+        "width": 57,
+        "height": 33,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 1347,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig_v2/eyes_left/fino_eyes_half.png",
+      "family": "addons_rig_v2",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "96a5d80055ccacb86c68d02ba3f22b662871144f54f53bc218886479ce3ef01c",
+      "part": "leftEye",
+      "state": "half",
+      "rigVersion": 2,
+      "png": {
+        "width": 47,
+        "height": 46,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 1518,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig_v2/eyes_left/fino_eyes_happy.png",
+      "family": "addons_rig_v2",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "7b9f01d4d5084341ec63932e6db770e7c87aab014d2ecb3b5d52140cdc40048a",
+      "part": "leftEye",
+      "state": "happy",
+      "rigVersion": 2,
+      "png": {
+        "width": 55,
+        "height": 30,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 902,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig_v2/eyes_left/fino_eyes_open.png",
+      "family": "addons_rig_v2",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "d73bd257698efb6c60d9bee81fd955d132b3360c7de01e19bf20ae8f6c6579b1",
+      "part": "leftEye",
+      "state": "open",
+      "rigVersion": 2,
+      "png": {
+        "width": 44,
+        "height": 40,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 1455,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig_v2/eyes_left/fino_eyes_surprised.png",
+      "family": "addons_rig_v2",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "b142ddb3f66347adcb68c0370ea13152ff549568659063c8ce5cce59013d333d",
+      "part": "leftEye",
+      "state": "surprised",
+      "rigVersion": 2,
+      "png": {
+        "width": 49,
+        "height": 69,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 2823,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig_v2/eyes_right/fino_eyes_closed.png",
+      "family": "addons_rig_v2",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "6e63f7ac5d2a354428f5d060b852897253a39ee8cc990ac89376798b2069cee6",
+      "part": "rightEye",
+      "state": "closed",
+      "rigVersion": 2,
+      "png": {
+        "width": 33,
+        "height": 29,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 665,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig_v2/eyes_right/fino_eyes_half.png",
+      "family": "addons_rig_v2",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "368074ec526b562cdc82d988f6018b1852c339f0731d1c419e3124278a039fd6",
+      "part": "rightEye",
+      "state": "half",
+      "rigVersion": 2,
+      "png": {
+        "width": 33,
+        "height": 39,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 906,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig_v2/eyes_right/fino_eyes_happy.png",
+      "family": "addons_rig_v2",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "2ed7eb5033c921d7378f24ed7fe054d91ef548ac76d2caf64b87d2405fcfb5b2",
+      "part": "rightEye",
+      "state": "happy",
+      "rigVersion": 2,
+      "png": {
+        "width": 41,
+        "height": 30,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 688,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig_v2/eyes_right/fino_eyes_open.png",
+      "family": "addons_rig_v2",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "a2f856619448a8ae75961084beebe8c2453d29288c2a744a8e4629782ab643ef",
+      "part": "rightEye",
+      "state": "open",
+      "rigVersion": 2,
+      "png": {
+        "width": 27,
+        "height": 32,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 718,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig_v2/eyes_right/fino_eyes_surprised.png",
+      "family": "addons_rig_v2",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "a6f6bcdf3dcf05613664ce1d0d19770466da3758da363b7cbe2033293148e1ec",
+      "part": "rightEye",
+      "state": "surprised",
+      "rigVersion": 2,
+      "png": {
+        "width": 27,
+        "height": 53,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 1145,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig_v2/mouth_only/fino_mouth_chew.png",
+      "family": "addons_rig_v2",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "faff2d16f325cbfba5c468bb1761ea34ca7e618bf7c4f2af9e179c27fc25a8d1",
+      "part": "mouth",
+      "state": "chew",
+      "rigVersion": 2,
+      "png": {
+        "width": 125,
+        "height": 70,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 2033,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig_v2/mouth_only/fino_mouth_neutral.png",
+      "family": "addons_rig_v2",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "aa264b6fa375d8b7caebfc06749b55b18cb72c7576342cba1946cf49c8d62f0e",
+      "part": "mouth",
+      "state": "neutral",
+      "rigVersion": 2,
+      "png": {
+        "width": 116,
+        "height": 78,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 1631,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig_v2/mouth_only/fino_mouth_open.png",
+      "family": "addons_rig_v2",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "cbf98b63666af0f285f88f08a6dbff7f810c25599fc133c378826a2b9d4734fb",
+      "part": "mouth",
+      "state": "open",
+      "rigVersion": 2,
+      "png": {
+        "width": 134,
+        "height": 100,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 4756,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig_v2/mouth_only/fino_mouth_sad.png",
+      "family": "addons_rig_v2",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "9039048a4cf8f245886df237ad89ed79944bd0c9a4309bb76988eb68117d7f73",
+      "part": "mouth",
+      "state": "sad",
+      "rigVersion": 2,
+      "png": {
+        "width": 121,
+        "height": 72,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 2293,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig_v2/mouth_only/fino_mouth_smile.png",
+      "family": "addons_rig_v2",
+      "role": "face-sprite",
+      "category": 4,
+      "sha256": "3ae5fc3b14a70f9d6b28f0e1b181378c85abd4c6ccfb7ee0f15c4ea16ad67f45",
+      "part": "mouth",
+      "state": "smile",
+      "rigVersion": 2,
+      "png": {
+        "width": 102,
+        "height": 63,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 1078,
+        "nonUniform8Blocks": null
+      }
+    },
+    {
+      "path": "public/animation/legacy/addons_rig_v2/rig.json",
+      "family": "addons_rig_v2",
+      "role": "rig-manifest",
+      "category": 3,
+      "sha256": "c804cf5722091f72ee508b30ea86a0bc8f75de2867edd71a27de07b09691b8c2",
+      "rigVersion": 2
+    },
+    {
+      "path": "public/animation/legacy/basis/fino_eating.png",
+      "family": "basis",
+      "role": "pose-base",
+      "category": 4,
+      "sha256": "d80ee3f4e586d65d32401bbf8923bc4ef4983166e8d48b6ffba1deb64fbce21c",
+      "pose": "eating",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 258186,
+        "nonUniform8Blocks": 4375
+      }
+    },
+    {
+      "path": "public/animation/legacy/basis/fino_reading.png",
+      "family": "basis",
+      "role": "pose-base",
+      "category": 4,
+      "sha256": "f9e9bc287ea179a4686688dc3f925c11439c56a5ec3124ff8b20c864eb365433",
+      "pose": "reading",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 310936,
+        "nonUniform8Blocks": 5182
+      }
+    },
+    {
+      "path": "public/animation/legacy/basis/fino_sitting_relaxed.png",
+      "family": "basis",
+      "role": "pose-base",
+      "category": 4,
+      "sha256": "829a95b041489f5dc5937701c7b92ce9a64ba2ce5677b04071fbc42b91656f93",
+      "pose": "sitting_relaxed",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 212160,
+        "nonUniform8Blocks": 3660
+      }
+    },
+    {
+      "path": "public/animation/legacy/basis/fino_sleeping.png",
+      "family": "basis",
+      "role": "pose-base",
+      "category": 4,
+      "sha256": "88ca2e8ef1700df446f813443d1239eda9ec791cd7ad32f2c5c7f8e92b20e69f",
+      "pose": "sleeping",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 241371,
+        "nonUniform8Blocks": 3982
+      }
+    },
+    {
+      "path": "public/animation/legacy/basis/fino_standing_active.png",
+      "family": "basis",
+      "role": "pose-base",
+      "category": 4,
+      "sha256": "2abb6089fe1230eea451c4727a70d815f6955990892c4925c0a35834b7d3229c",
+      "pose": "standing_active",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 253717,
+        "nonUniform8Blocks": 4336
+      }
+    },
+    {
+      "path": "public/animation/legacy/basis/fino_standing_neutral.png",
+      "family": "basis",
+      "role": "pose-base",
+      "category": 4,
+      "sha256": "db250a2e64b7a0a663acdb826af55a918eb48841503e7ecb56e138aee9055def",
+      "pose": "standing_neutral",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 246185,
+        "nonUniform8Blocks": 4221
+      }
+    },
+    {
+      "path": "public/animation/legacy/basis_face_base/fino_eating.png",
+      "family": "basis_face_base",
+      "role": "face-free-pose-base",
+      "category": 4,
+      "sha256": "1bfde83d649df7b6533c63d6b19f4ed54478dbc4e60f9d5dca6a9c8c608e49e6",
+      "pose": "eating",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 258209,
+        "nonUniform8Blocks": 4308
+      }
+    },
+    {
+      "path": "public/animation/legacy/basis_face_base/fino_reading.png",
+      "family": "basis_face_base",
+      "role": "face-free-pose-base",
+      "category": 4,
+      "sha256": "3b12b6e2bb2e2b98908538086ba6e3bb902b19ed356cd1c81e01caa13d522bc7",
+      "pose": "reading",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 311152,
+        "nonUniform8Blocks": 5085
+      }
+    },
+    {
+      "path": "public/animation/legacy/basis_face_base/fino_sitting_relaxed.png",
+      "family": "basis_face_base",
+      "role": "face-free-pose-base",
+      "category": 4,
+      "sha256": "dc3bcb1359d735408059db0ae0a80381f562d2e0e607bd04d103928efa0794e5",
+      "pose": "sitting_relaxed",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 212192,
+        "nonUniform8Blocks": 3604
+      }
+    },
+    {
+      "path": "public/animation/legacy/basis_face_base/fino_sleeping.png",
+      "family": "basis_face_base",
+      "role": "face-free-pose-base",
+      "category": 4,
+      "sha256": "c27258d36db3c2c3006b2d2343ad3552e6159a3ffd89c53ee819f603aee9048e",
+      "pose": "sleeping",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 241371,
+        "nonUniform8Blocks": 3896
+      }
+    },
+    {
+      "path": "public/animation/legacy/basis_face_base/fino_standing_active.png",
+      "family": "basis_face_base",
+      "role": "face-free-pose-base",
+      "category": 4,
+      "sha256": "bd8fd1c0e385aec044d6d2e1721286184a1e6370dcf01c6b07a465b249837840",
+      "pose": "standing_active",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 253760,
+        "nonUniform8Blocks": 4264
+      }
+    },
+    {
+      "path": "public/animation/legacy/basis_face_base/fino_standing_neutral.png",
+      "family": "basis_face_base",
+      "role": "face-free-pose-base",
+      "category": 4,
+      "sha256": "c49c23f86bb3fc88203d5749afc2cc675f77432a320b886fd1e65371f5938e14",
+      "pose": "standing_neutral",
+      "png": {
+        "width": 1024,
+        "height": 1024,
+        "depth": 8,
+        "channels": 4,
+        "partialAlphaPixels": 246262,
+        "nonUniform8Blocks": 4176
+      }
+    }
+  ],
+  "poses": [
+    {
+      "id": "standing_neutral",
+      "category": 4,
+      "base": "public/animation/legacy/basis/fino_standing_neutral.png",
+      "faceBase": "public/animation/legacy/basis_face_base/fino_standing_neutral.png",
+      "reference": {
+        "path": "public/animation/tracing/fino_standing_neutral_128.png",
+        "sha256": "015581d60e1fbd07e01c57103d22ee711aef334025afe899f7dc3089db61654a",
+        "category": 1,
+        "role": "editor-only-reference-not-native-pose"
+      }
+    },
+    {
+      "id": "standing_active",
+      "category": 4,
+      "base": "public/animation/legacy/basis/fino_standing_active.png",
+      "faceBase": "public/animation/legacy/basis_face_base/fino_standing_active.png",
+      "reference": {
+        "path": "public/animation/tracing/fino_standing_active_128.png",
+        "sha256": "6f2a8f01d13a772789374d26e1de49f181b63407f7cb9188bcc27cb2826f1a12",
+        "category": 1,
+        "role": "editor-only-reference-not-native-pose"
+      }
+    },
+    {
+      "id": "sitting_relaxed",
+      "category": 4,
+      "base": "public/animation/legacy/basis/fino_sitting_relaxed.png",
+      "faceBase": "public/animation/legacy/basis_face_base/fino_sitting_relaxed.png",
+      "reference": {
+        "path": "public/animation/tracing/fino_sitting_relaxed_128.png",
+        "sha256": "68fdb4942837145e44adbbaafddea68a59ca8e5890402acbfb2673a841958d8b",
+        "category": 1,
+        "role": "editor-only-reference-not-native-pose"
+      }
+    },
+    {
+      "id": "sleeping",
+      "category": 4,
+      "base": "public/animation/legacy/basis/fino_sleeping.png",
+      "faceBase": "public/animation/legacy/basis_face_base/fino_sleeping.png",
+      "reference": {
+        "path": "public/animation/tracing/fino_sleeping_128.png",
+        "sha256": "ebe1c3ec30708037751475f19958736458fa1c1f10c20fdd154c655e58dcc021",
+        "category": 1,
+        "role": "editor-only-reference-not-native-pose"
+      }
+    },
+    {
+      "id": "reading",
+      "category": 4,
+      "base": "public/animation/legacy/basis/fino_reading.png",
+      "faceBase": "public/animation/legacy/basis_face_base/fino_reading.png",
+      "reference": {
+        "path": "public/animation/tracing/fino_reading_128.png",
+        "sha256": "b6bddafeb167ce585aba0b5fe2d7fd09550b70742f3a0b8d8214569992a199fa",
+        "category": 1,
+        "role": "editor-only-reference-not-native-pose"
+      }
+    },
+    {
+      "id": "eating",
+      "category": 4,
+      "base": "public/animation/legacy/basis/fino_eating.png",
+      "faceBase": "public/animation/legacy/basis_face_base/fino_eating.png",
+      "reference": {
+        "path": "public/animation/tracing/fino_eating_128.png",
+        "sha256": "b46ef46be81c7f97377d687d0aaa8c75cf01de5e9b7ba5fe6c7d5962a78a171c",
+        "category": 1,
+        "role": "editor-only-reference-not-native-pose"
+      }
+    }
+  ],
+  "states": {
+    "eyes": [
+      "open",
+      "half",
+      "closed",
+      "happy",
+      "surprised"
+    ],
+    "mouths": [
+      "neutral",
+      "smile",
+      "open",
+      "chew",
+      "sad"
+    ],
+    "faceParts": [
+      "leftEye",
+      "rightEye",
+      "mouth"
+    ],
+    "layerKinds": [
+      "base",
+      "leftEye",
+      "rightEye",
+      "mouth",
+      "pixels"
+    ]
+  },
+  "rigs": [
+    {
+      "version": 1,
+      "category": 3,
+      "manifestPath": "public/animation/legacy/addons_rig/rig.json",
+      "sha256": "00124a3ae45f1da9aa36bac8c741c9695426e56db901e09cd7143e3c496e66ce",
+      "manifestFields": [
+        "version",
+        "elements"
+      ],
+      "elementFields": [
+        "anchorX",
+        "anchorY",
+        "file",
+        "height",
+        "originX",
+        "originY",
+        "width"
+      ],
+      "elementKeys": [
+        "eyeLeft/closed",
+        "eyeLeft/half",
+        "eyeLeft/happy",
+        "eyeLeft/open",
+        "eyeLeft/surprised",
+        "eyeRight/closed",
+        "eyeRight/half",
+        "eyeRight/happy",
+        "eyeRight/open",
+        "eyeRight/surprised",
+        "mouth/chew",
+        "mouth/neutral",
+        "mouth/open",
+        "mouth/sad",
+        "mouth/smile"
+      ]
+    },
+    {
+      "version": 2,
+      "category": 3,
+      "manifestPath": "public/animation/legacy/addons_rig_v2/rig.json",
+      "sha256": "c804cf5722091f72ee508b30ea86a0bc8f75de2867edd71a27de07b09691b8c2",
+      "manifestFields": [
+        "version",
+        "rigRoot",
+        "baseRoot",
+        "strategy",
+        "sources",
+        "muzzleVariant",
+        "faceBases",
+        "elements"
+      ],
+      "elementFields": [
+        "anchorX",
+        "anchorY",
+        "file",
+        "height",
+        "originX",
+        "originY",
+        "selectionWindow",
+        "source",
+        "width"
+      ],
+      "elementKeys": [
+        "eyeLeft/closed",
+        "eyeLeft/half",
+        "eyeLeft/happy",
+        "eyeLeft/open",
+        "eyeLeft/surprised",
+        "eyeRight/closed",
+        "eyeRight/half",
+        "eyeRight/happy",
+        "eyeRight/open",
+        "eyeRight/surprised",
+        "mouth/chew",
+        "mouth/neutral",
+        "mouth/open",
+        "mouth/sad",
+        "mouth/smile"
+      ],
+      "faceBaseFields": [
+        "eyeWindows",
+        "file",
+        "mouthWindow",
+        "source"
+      ],
+      "sourceFields": [
+        "eyes",
+        "faceBases",
+        "mouthOnly"
+      ],
+      "windowFields": [
+        "x",
+        "y",
+        "width",
+        "height",
+        "fillSample"
+      ],
+      "sampleFields": [
+        "x",
+        "y"
+      ],
+      "selectionWindowFields": [
+        "x",
+        "y",
+        "width",
+        "height"
+      ],
+      "strategy": "face_base_plus_mouth_only",
+      "muzzleVariant": false
+    }
+  ],
+  "presets": {
+    "path": "src/animation/data/legacy-presets.json",
+    "sha256": "b93abbdb4ac755327b0eb97554da6dde4bf27012571dbfa43d651f790b83df5d",
+    "category": 3,
+    "tables": [
+      "v1",
+      "v2",
+      "addons"
+    ],
+    "faceFields": [
+      "state",
+      "x",
+      "y",
+      "width",
+      "height"
+    ],
+    "addonParts": [
+      "eyes",
+      "mouth"
+    ],
+    "addonFields": [
+      "dx",
+      "dy"
+    ],
+    "rigDefault": 1,
+    "readingHasTwoExplicitEyes": true,
+    "missingRightEyePreset": "historical authoring synthesized an invisible right eye; not an import default"
+  },
+  "structures": {
+    "Definition": {
+      "source": "src/animation/legacy.ts",
+      "category": 3,
+      "fields": [
+        {
+          "name": "version",
+          "type": "number",
+          "category": 3,
+          "optional": false,
+          "sourceType": "number"
+        },
+        {
+          "name": "faceRigVersion",
+          "type": "number",
+          "category": 3,
+          "optional": true,
+          "sourceType": "number"
+        },
+        {
+          "name": "id",
+          "type": "string",
+          "category": 3,
+          "optional": false,
+          "sourceType": "string"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "category": 1,
+          "optional": false,
+          "sourceType": "string"
+        },
+        {
+          "name": "basePose",
+          "type": "string",
+          "category": 3,
+          "optional": false,
+          "sourceType": "string"
+        },
+        {
+          "name": "reactionState",
+          "type": "string|null",
+          "category": 3,
+          "optional": true,
+          "sourceType": "string|null"
+        },
+        {
+          "name": "frames",
+          "type": "LegacyFrame[]",
+          "category": 1,
+          "optional": false,
+          "sourceType": "LegacyFrame[]"
+        }
+      ]
+    },
+    "LegacyFrame": {
+      "source": "src/animation/legacy.ts",
+      "category": 3,
+      "fields": [
+        {
+          "name": "durationMs",
+          "type": "positive integer",
+          "category": 1,
+          "optional": false,
+          "sourceType": "number"
+        },
+        {
+          "name": "ops",
+          "type": "LegacyOp[]",
+          "category": 4,
+          "optional": false,
+          "sourceType": "LegacyOp[]"
+        },
+        {
+          "name": "face",
+          "type": "partial FacePart -> FaceElement",
+          "category": 3,
+          "optional": true,
+          "sourceType": "Partial<Record<FacePart,FaceElement>>"
+        },
+        {
+          "name": "layers",
+          "type": "LegacyLayer[]",
+          "category": 2,
+          "optional": true,
+          "sourceType": "LegacyLayer[]"
+        },
+        {
+          "name": "eyes",
+          "type": "Addon|null",
+          "category": 4,
+          "optional": true,
+          "sourceType": "Addon|null"
+        },
+        {
+          "name": "mouth",
+          "type": "Addon|null",
+          "category": 4,
+          "optional": true,
+          "sourceType": "Addon|null"
+        }
+      ]
+    },
+    "FaceElement": {
+      "source": "src/animation/legacy.ts",
+      "category": 3,
+      "fields": [
+        {
+          "name": "state",
+          "type": "string",
+          "category": 3,
+          "optional": false,
+          "sourceType": "string"
+        },
+        {
+          "name": "x",
+          "type": "integer in legacy units",
+          "category": 4,
+          "optional": false,
+          "sourceType": "number"
+        },
+        {
+          "name": "y",
+          "type": "integer in legacy units",
+          "category": 4,
+          "optional": false,
+          "sourceType": "number"
+        },
+        {
+          "name": "width",
+          "type": "integer in legacy units",
+          "category": 4,
+          "optional": false,
+          "sourceType": "number"
+        },
+        {
+          "name": "height",
+          "type": "integer in legacy units",
+          "category": 4,
+          "optional": false,
+          "sourceType": "number"
+        },
+        {
+          "name": "visible",
+          "type": "boolean",
+          "category": 1,
+          "optional": true,
+          "sourceType": "boolean"
+        }
+      ]
+    },
+    "LegacyLayer": {
+      "source": "src/animation/legacy.ts",
+      "category": 2,
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "category": 1,
+          "optional": false,
+          "sourceType": "string"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "category": 1,
+          "optional": false,
+          "sourceType": "string"
+        },
+        {
+          "name": "kind",
+          "type": "base|FacePart|pixels",
+          "category": 3,
+          "optional": false,
+          "sourceType": "'base'|FacePart|'pixels'"
+        },
+        {
+          "name": "visible",
+          "type": "boolean",
+          "category": 1,
+          "optional": true,
+          "sourceType": "boolean"
+        },
+        {
+          "name": "locked",
+          "type": "boolean",
+          "category": 1,
+          "optional": true,
+          "sourceType": "boolean"
+        },
+        {
+          "name": "pixels",
+          "type": "Pixel[]",
+          "category": 2,
+          "optional": true,
+          "sourceType": "Pixel[]"
+        }
+      ]
+    },
+    "Pixel": {
+      "source": "src/animation/legacy.ts",
+      "category": 2,
+      "fields": [
+        {
+          "name": "x",
+          "type": "see-source",
+          "category": 2,
+          "optional": false,
+          "sourceType": "number"
+        },
+        {
+          "name": "y",
+          "type": "see-source",
+          "category": 2,
+          "optional": false,
+          "sourceType": "number"
+        },
+        {
+          "name": "rgba",
+          "type": "see-source",
+          "category": 1,
+          "optional": false,
+          "sourceType": "number"
+        }
+      ]
+    },
+    "Rect": {
+      "source": "src/animation/raster.ts",
+      "category": 2,
+      "fields": [
+        {
+          "name": "x",
+          "type": "see-source",
+          "category": 2,
+          "optional": false,
+          "sourceType": "number"
+        },
+        {
+          "name": "y",
+          "type": "see-source",
+          "category": 2,
+          "optional": false,
+          "sourceType": "number"
+        },
+        {
+          "name": "width",
+          "type": "see-source",
+          "category": 2,
+          "optional": false,
+          "sourceType": "number"
+        },
+        {
+          "name": "height",
+          "type": "see-source",
+          "category": 2,
+          "optional": false,
+          "sourceType": "number"
+        }
+      ]
+    },
+    "Point": {
+      "source": "src/animation/raster.ts",
+      "category": 2,
+      "fields": [
+        {
+          "name": "x",
+          "type": "see-source",
+          "category": 2,
+          "optional": false,
+          "sourceType": "number"
+        },
+        {
+          "name": "y",
+          "type": "see-source",
+          "category": 2,
+          "optional": false,
+          "sourceType": "number"
+        }
+      ]
+    },
+    "LegacyOp": {
+      "source": "src/animation/legacy.ts",
+      "category": 4,
+      "fields": [
+        {
+          "name": "type",
+          "type": "string",
+          "category": 4,
+          "optional": false,
+          "sourceType": "string"
+        },
+        {
+          "name": "mask",
+          "type": "see-source",
+          "category": 4,
+          "optional": true,
+          "sourceType": "Mask"
+        },
+        {
+          "name": "rect",
+          "type": "see-source",
+          "category": 4,
+          "optional": true,
+          "sourceType": "Rect"
+        },
+        {
+          "name": "dx",
+          "type": "see-source",
+          "category": 4,
+          "optional": true,
+          "sourceType": "number"
+        },
+        {
+          "name": "dy",
+          "type": "see-source",
+          "category": 4,
+          "optional": true,
+          "sourceType": "number"
+        },
+        {
+          "name": "sx",
+          "type": "see-source",
+          "category": 4,
+          "optional": true,
+          "sourceType": "number"
+        },
+        {
+          "name": "sy",
+          "type": "see-source",
+          "category": 4,
+          "optional": true,
+          "sourceType": "number"
+        },
+        {
+          "name": "scope",
+          "type": "see-source",
+          "category": 4,
+          "optional": true,
+          "sourceType": "string"
+        },
+        {
+          "name": "vacatedArea",
+          "type": "see-source",
+          "category": 4,
+          "optional": true,
+          "sourceType": "string|{strategy:string}"
+        }
+      ]
+    },
+    "RigElement": {
+      "source": "src/animation/legacy.ts",
+      "category": 3,
+      "fields": [
+        {
+          "name": "file",
+          "type": "see-source",
+          "category": 3,
+          "optional": false,
+          "sourceType": "string"
+        },
+        {
+          "name": "width",
+          "type": "see-source",
+          "category": 3,
+          "optional": false,
+          "sourceType": "number"
+        },
+        {
+          "name": "height",
+          "type": "see-source",
+          "category": 3,
+          "optional": false,
+          "sourceType": "number"
+        },
+        {
+          "name": "anchorX",
+          "type": "see-source",
+          "category": 3,
+          "optional": false,
+          "sourceType": "number"
+        },
+        {
+          "name": "anchorY",
+          "type": "see-source",
+          "category": 3,
+          "optional": false,
+          "sourceType": "number"
+        }
+      ]
+    },
+    "Rig": {
+      "source": "src/animation/legacy.ts",
+      "category": 3,
+      "fields": [
+        {
+          "name": "version",
+          "type": "number",
+          "category": 3,
+          "optional": false,
+          "sourceType": "number"
+        },
+        {
+          "name": "rigRoot",
+          "type": "string",
+          "category": 3,
+          "optional": true,
+          "sourceType": "string"
+        },
+        {
+          "name": "baseRoot",
+          "type": "string",
+          "category": 3,
+          "optional": true,
+          "sourceType": "string"
+        },
+        {
+          "name": "elements",
+          "type": "record of RigElement",
+          "category": 3,
+          "optional": false,
+          "sourceType": "Record<string,RigElement>"
+        },
+        {
+          "name": "faceBases",
+          "type": "record of file reference",
+          "category": 3,
+          "optional": true,
+          "sourceType": "Record<string,{file:string}>"
+        }
+      ]
+    },
+    "LegacyTemplate": {
+      "source": "src/animation/templateLibrary.ts",
+      "category": 2,
+      "fields": [
+        {
+          "name": "id",
+          "type": "see-source",
+          "category": 1,
+          "optional": false,
+          "sourceType": "string"
+        },
+        {
+          "name": "name",
+          "type": "see-source",
+          "category": 1,
+          "optional": false,
+          "sourceType": "string"
+        },
+        {
+          "name": "width",
+          "type": "see-source",
+          "category": 2,
+          "optional": false,
+          "sourceType": "number"
+        },
+        {
+          "name": "height",
+          "type": "see-source",
+          "category": 2,
+          "optional": false,
+          "sourceType": "number"
+        },
+        {
+          "name": "pixels",
+          "type": "see-source",
+          "category": 2,
+          "optional": false,
+          "sourceType": "Pixel[]"
+        },
+        {
+          "name": "origin",
+          "type": "see-source",
+          "category": 2,
+          "optional": false,
+          "sourceType": "Point"
+        }
+      ]
+    },
+    "TemplateLibrary": {
+      "source": "src/animation/templateLibrary.ts",
+      "category": 3,
+      "fields": [
+        {
+          "name": "version",
+          "type": "see-source",
+          "category": 3,
+          "optional": false,
+          "sourceType": "number"
+        },
+        {
+          "name": "templates",
+          "type": "see-source",
+          "category": 3,
+          "optional": false,
+          "sourceType": "{id:string;name:string;width:number;height:number;originX:number;originY:number;pixels:Pixel[];}[]"
+        }
+      ]
+    },
+    "SerializedTemplate": {
+      "source": "src/animation/templateLibrary.ts",
+      "category": 2,
+      "fields": [
+        {
+          "name": "id",
+          "type": "see-source",
+          "category": 1,
+          "optional": false,
+          "sourceType": "string"
+        },
+        {
+          "name": "name",
+          "type": "see-source",
+          "category": 1,
+          "optional": false,
+          "sourceType": "string"
+        },
+        {
+          "name": "width",
+          "type": "see-source",
+          "category": 2,
+          "optional": false,
+          "sourceType": "number"
+        },
+        {
+          "name": "height",
+          "type": "see-source",
+          "category": 2,
+          "optional": false,
+          "sourceType": "number"
+        },
+        {
+          "name": "originX",
+          "type": "see-source",
+          "category": 2,
+          "optional": false,
+          "sourceType": "number"
+        },
+        {
+          "name": "originY",
+          "type": "see-source",
+          "category": 2,
+          "optional": false,
+          "sourceType": "number"
+        },
+        {
+          "name": "pixels",
+          "type": "see-source",
+          "category": 2,
+          "optional": false,
+          "sourceType": "Pixel[]"
+        }
+      ]
+    }
+  },
+  "unions": {
+    "Mask": {
+      "source": "src/animation/legacy.ts",
+      "category": 2,
+      "variants": [
+        {
+          "type": "rect",
+          "fields": [
+            "type",
+            "x",
+            "y",
+            "width",
+            "height"
+          ]
+        },
+        {
+          "type": "polygon",
+          "fields": [
+            "type",
+            "points"
+          ]
+        }
+      ],
+      "sourceType": "({type:'rect'}&Rect)|{type:'polygon';points:[number,number][]}"
+    },
+    "Addon": {
+      "source": "src/animation/legacy.ts",
+      "category": 4,
+      "variants": [
+        "string",
+        "object",
+        "null-in-frame",
+        "absent-in-frame"
+      ],
+      "objectFields": [
+        "state",
+        "dx",
+        "dy"
+      ],
+      "sourceType": "string|{state:string;dx?:number;dy?:number}"
+    },
+    "vacatedArea": {
+      "category": 4,
+      "variants": [
+        "string",
+        "object",
+        "absent"
+      ],
+      "objectFields": [
+        "strategy"
+      ],
+      "sourceType": "string|{strategy:string}"
+    }
+  },
+  "operations": [
+    {
+      "type": "moveRegion",
+      "category": 4,
+      "geometry": "rect",
+      "fields": [
+        "type",
+        "rect",
+        "dx",
+        "dy"
+      ],
+      "defaultStrategy": "transparent"
+    },
+    {
+      "type": "moveSelection",
+      "category": 4,
+      "geometry": "mask",
+      "fields": [
+        "type",
+        "mask",
+        "dx",
+        "dy",
+        "vacatedArea"
+      ],
+      "strategies": [
+        "transparent",
+        "restoreOriginal",
+        "extendSelectionEdge"
+      ],
+      "defaultStrategy": "transparent"
+    },
+    {
+      "type": "stretchSelection",
+      "category": 4,
+      "geometry": "mask-bounds-not-polygon-interior",
+      "fields": [
+        "type",
+        "mask",
+        "sx",
+        "sy",
+        "scope"
+      ],
+      "scopes": [
+        "bounds",
+        "boundsLocal"
+      ],
+      "defaultScope": "bounds"
+    }
+  ],
+  "defaults": {
+    "layers": "absent or empty: base then leftEye/rightEye/mouth",
+    "layerVisible": true,
+    "layerLocked": false,
+    "faceVisible": true,
+    "addonRoot": "addons_normalized",
+    "stringAddonOffset": {
+      "dx": 0,
+      "dy": 0
+    }
+  },
+  "persistence": {
+    "category": 3,
+    "database": "northcore-animation-builder",
+    "databaseVersion": 1,
+    "objectStore": "sessions",
+    "definitionKey": "${definition.id}.finoanim.json",
+    "libraryKey": "__legacy_templates",
+    "rasterKey": "${store.state.name}",
+    "libraryAutosave": "sequential writes, retry, libraryDirty separate from definition identity",
+    "definitionSave": "external save then local write; captured definition and session guard",
+    "formats": [
+      {
+        "name": ".finoanim.json",
+        "category": 3,
+        "role": "definition JSON; external and local"
+      },
+      {
+        "name": "fino_templates.json",
+        "category": 3,
+        "role": "version 1 global library JSON"
+      },
+      {
+        "name": ".png",
+        "category": 4,
+        "role": "current 1024 frame only, not document save"
+      }
+    ],
+    "filePickerAccepts": [
+      ".json",
+      ".finoanim"
+    ],
+    "discovery": "local definitions selected by .finoanim.json suffix; local keys override bundled sample names"
+  },
+  "contexts": [
+    {
+      "id": "addonRoot",
+      "category": 3,
+      "status": "ambiguous-if-not-supplied",
+      "values": [
+        "addons",
+        "addons_cleaned",
+        "addons_normalized"
+      ],
+      "default": "addons_normalized",
+      "persistedInDefinition": false,
+      "effect": "selects different whole-overlay assets; capture active context or request interpretation"
+    },
+    {
+      "id": "faceRigVersion",
+      "category": 3,
+      "status": "known-default",
+      "default": 1,
+      "effect": "separate from definition.version; exactly 2 selects face-free bases and V2 sprites"
+    },
+    {
+      "id": "renderer-compositing",
+      "category": 4,
+      "status": "confirmed",
+      "effect": "base/face source-over; pixel layers overwrite nonzero alpha; Raster128 does not source-over"
+    },
+    {
+      "id": "unknown-data",
+      "category": 3,
+      "status": "unresolved",
+      "effect": "parser accepts incompletely validated fields; renderer warns/skips unknown operations. Preserve raw input; do not classify as fully migrated."
+    }
+  ],
+  "assessmentStatuses": [
+    "known",
+    "unknown",
+    "ambiguous",
+    "blocked"
+  ],
+  "classificationConditions": [
+    {
+      "component": "pixel-layer-or-template",
+      "category": 2,
+      "condition": "each logical 8x8 block and geometry is representable; preserve RGBA and editing semantics, not just flattened output"
+    },
+    {
+      "component": "flattened-frame",
+      "category": 4,
+      "condition": "byte-exact reduction only if every 8x8 RGBA block is identical; otherwise explicitly lossy sampling"
+    },
+    {
+      "component": "native-face-and-operation-authoring",
+      "category": 3,
+      "condition": "native integer 128 model; no copied 1024 renderer semantics"
+    }
+  ],
+  "references": {
+    "dartGoldens": {
+      "path": "tests/fixtures/legacy-dart-goldens.json",
+      "sha256": "b9ae0b9703ced42bd8b4949840a99dd9630537740c331a5fcc40810412c4237d",
+      "count": 24,
+      "algorithm": "FNV-1a 32-bit over renderer RGBA bytes",
+      "provenance": "existing Dart outputs; immutable oracle"
+    },
+    "portDocumentation": "docs/animation-builder-migration.md"
+  },
+  "runtimeOnly": [
+    "index",
+    "active",
+    "facePart",
+    "selection",
+    "color",
+    "tool",
+    "past",
+    "future",
+    "saved",
+    "playing",
+    "viewport",
+    "render caches",
+    "rig cache",
+    "message"
+  ],
+  "removalRecommendation": "none; no category 5 for persisted data or functionality"
+}

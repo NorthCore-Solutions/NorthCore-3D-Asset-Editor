@@ -1,7 +1,6 @@
-import { decodePng } from './files';
-import { bytes, rgba } from './raster';
+import { decodePng } from './png';
+import { bytes, rgba } from './colors';
 import type { Point, Rect } from './raster';
-import presets from './data/legacy-presets.json';
 
 export type FacePart = 'leftEye' | 'rightEye' | 'mouth';
 export type FaceElement = {
@@ -209,21 +208,6 @@ export class LegacyImage {
   }
 }
 export type AssetLoader = (path: string) => Promise<LegacyImage>;
-const cache = new Map<string, Promise<LegacyImage>>();
-export const loadLegacyAsset: AssetLoader = (path) => {
-  if (path.includes('..') || !/^[\w/.-]+\.png$/.test(path)) throw Error('Ungültiger Asset-Pfad.');
-  let result = cache.get(path);
-  if (!result) {
-    result = fetch(`${import.meta.env.BASE_URL}animation/legacy/${path}`).then(async (response) => {
-      if (!response.ok) throw Error(`Asset fehlt: ${path}`);
-      return legacyDecode(new Uint8Array(await response.arrayBuffer()));
-    });
-    cache.set(path, result);
-    if (cache.size > 32) cache.delete(cache.keys().next().value!);
-    void result.catch(() => cache.delete(path));
-  }
-  return result;
-};
 export function legacyDecode(data: Uint8Array) {
   const p = decodePng(data),
     result = new LegacyImage(p.width, p.height);
@@ -231,148 +215,14 @@ export function legacyDecode(data: Uint8Array) {
     result.pixels[i] = rgba(p.rgba[i * 4]!, p.rgba[i * 4 + 1]!, p.rgba[i * 4 + 2]!, p.rgba[i * 4 + 3]!);
   return result;
 }
-export async function loadRig(version: number): Promise<Rig> {
-  const response = await fetch(
-    `${import.meta.env.BASE_URL}animation/legacy/${version === 2 ? 'addons_rig_v2' : 'addons_rig'}/rig.json`
-  );
-  if (!response.ok) throw Error('Face-Rig fehlt.');
-  return (await response.json()) as Rig;
-}
 export function facePlacement(element: FaceElement, asset: RigElement): Point {
   return {
     x: element.x - Math.trunc((asset.anchorX * element.width) / asset.width),
     y: element.y - Math.trunc((asset.anchorY * element.height) / asset.height),
   };
 }
-export type FaceResizeAnchor = { fixed: Point; signX: number; signY: number };
-export function resizeFace(
-  element: FaceElement,
-  asset: RigElement,
-  at: Point,
-  anchor: FaceResizeAnchor
-): FaceElement {
-  const dw = (at.x - anchor.fixed.x) * anchor.signX,
-    dh = (at.y - anchor.fixed.y) * anchor.signY;
-  const projected = (dw * asset.width + dh * asset.height) / (asset.width ** 2 + asset.height ** 2);
-  const scale = Math.max(
-    Math.max(4 / asset.width, 4 / asset.height),
-    Math.min(Math.min(1024 / asset.width, 1024 / asset.height), projected)
-  );
-  const width = dartRound(asset.width * scale),
-    height = dartRound(asset.height * scale);
-  const left = anchor.fixed.x - (anchor.signX < 0 ? width : 0),
-    top = anchor.fixed.y - (anchor.signY < 0 ? height : 0);
-  return {
-    ...element,
-    width,
-    height,
-    x: left + Math.trunc((asset.anchorX * width) / asset.width),
-    y: top + Math.trunc((asset.anchorY * height) / asset.height),
-  };
-}
 export function rigElement(rig: Rig, part: FacePart, state: string) {
   return rig.elements[`${partKey(part)}/${state}`];
-}
-export type LegacyPreview =
-  | { layer: string; pixels: ReadonlyMap<number, Pixel> }
-  | { part: FacePart; element: FaceElement };
-export class LegacyScene {
-  constructor(
-    readonly base: LegacyImage,
-    readonly frame: LegacyFrame,
-    readonly rig: Rig,
-    readonly sprites: Map<FacePart, LegacyImage>
-  ) {}
-  private pixelLayers = new Map<LegacyLayer, Map<number, number>>();
-  faceSample(part: FacePart, x: number, y: number, override?: FaceElement) {
-    const el = override ?? this.frame.face?.[part],
-      sprite = this.sprites.get(part),
-      asset = el && rigElement(this.rig, part, el.state);
-    if (!el || !sprite || !asset || el.visible === false) return 0;
-    const p = facePlacement(el, asset),
-      dx = x - p.x,
-      dy = y - p.y;
-    if (dx < 0 || dy < 0 || dx >= el.width || dy >= el.height) return 0;
-    return sprite.get(
-      Math.floor((dx * sprite.width) / el.width),
-      Math.floor((dy * sprite.height) / el.height)
-    );
-  }
-  sample(x: number, y: number, override?: LegacyPreview) {
-    let out = 0;
-    const layers: LegacyLayer[] = this.frame.layers?.length
-      ? this.frame.layers
-      : [{ id: 'base', name: '', kind: 'base' }, ...PARTS.map((kind) => ({ id: kind, name: '', kind }))];
-    for (const layer of layers) {
-      if (layer.visible === false) continue;
-      if (layer.kind === 'base') out = alphaOver(this.base.get(x, y), out);
-      else if (layer.kind === 'pixels') {
-        let pixels = this.pixelLayers.get(layer);
-        if (!pixels) {
-          pixels = new Map(layer.pixels?.map((p) => [p.y * 1024 + p.x, p.rgba]));
-          this.pixelLayers.set(layer, pixels);
-        }
-        const v =
-          override && 'layer' in override && override.layer === layer.id
-            ? override.pixels.get(y * 1024 + x)?.rgba
-            : pixels.get(y * 1024 + x);
-        if (v !== undefined && v & 255) out = v;
-      } else
-        out = alphaOver(
-          this.faceSample(
-            layer.kind,
-            x,
-            y,
-            override && 'part' in override && override.part === layer.kind ? override.element : undefined
-          ),
-          out
-        );
-    }
-    return out;
-  }
-}
-export function presetFace(
-  pose: string,
-  version: number,
-  rig: Rig,
-  existing?: LegacyFrame['face']
-): LegacyFrame['face'] {
-  const table = (version === 2 ? presets.v2 : presets.v1) as Record<
-    string,
-    Partial<Record<FacePart, FaceElement>>
-  >;
-  const source = table[pose];
-  if (!source) return {};
-  const face = structuredClone(source);
-  for (const part of PARTS) {
-    const el = face[part],
-      previous = existing?.[part];
-    if (!el || !previous) continue;
-    const a = rigElement(rig, part, el.state),
-      b = rigElement(rig, part, previous.state);
-    if (a && b) {
-      el.width = Math.max(1, dartRound((b.width * el.width) / a.width));
-      el.height = Math.max(1, dartRound((b.height * source[part]!.width) / a.width));
-    }
-    el.state = previous.state;
-    el.visible = previous.visible ?? true;
-  }
-  if (!face.rightEye && face.leftEye) {
-    const left = rigElement(rig, 'leftEye', 'open'),
-      right = rigElement(rig, 'rightEye', 'open');
-    if (left && right) {
-      const width = dartRound((face.leftEye.width * right.width) / left.width);
-      face.rightEye = {
-        state: 'open',
-        x: Math.min(1023, face.leftEye.x + dartRound(face.leftEye.width * 2.5)),
-        y: face.leftEye.y,
-        width,
-        height: dartRound((width * right.height) / right.width),
-        visible: false,
-      };
-    }
-  }
-  return face;
 }
 export async function renderLegacy(
   definition: Definition,
@@ -380,8 +230,7 @@ export async function renderLegacy(
   loader: AssetLoader,
   rig: Rig,
   addonRoot = 'addons_normalized',
-  warn: (text: string) => void = () => {},
-  onScene?: (scene: LegacyScene) => void
+  warn: (text: string) => void = () => {}
 ) {
   const frame = definition.frames[index];
   if (!frame) throw Error('Frame fehlt.');
@@ -416,7 +265,6 @@ export async function renderLegacy(
       ref.dy ?? 0
     );
   }
-  const sprites = new Map<FacePart, LegacyImage>();
   const face = async (out: LegacyImage, part: FacePart) => {
     const el = frame.face?.[part];
     if (!el || el.visible === false) return;
@@ -426,14 +274,12 @@ export async function renderLegacy(
       return;
     }
     const sprite = await loader(`${rig.rigRoot ?? 'addons_rig'}/${asset.file}`);
-    sprites.set(part, sprite);
     const p = facePlacement(el, asset);
     out.composite(sprite, p.x, p.y, el.width, el.height);
   };
   if (!frame.layers?.length) {
     const result = base.clone();
     for (const p of PARTS) await face(result, p);
-    onScene?.(new LegacyScene(base, frame, rig, sprites));
     return result;
   }
   const result = new LegacyImage(base.width, base.height);
@@ -444,7 +290,6 @@ export async function renderLegacy(
       for (const p of layer.pixels ?? []) if (p.rgba & 255) result.set(p.x, p.y, p.rgba);
     } else await face(result, layer.kind);
   }
-  onScene?.(new LegacyScene(base, frame, rig, sprites));
   return result;
 }
 export function parseDefinition(json: string): Definition {

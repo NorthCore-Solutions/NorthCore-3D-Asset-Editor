@@ -1,3 +1,4 @@
+import { isEditorMenuModalOpen } from '../../app/editorMenuModal';
 import { useEffect } from 'react';
 import { useEditorStore } from '../../store/editorStore';
 
@@ -10,7 +11,7 @@ export function useEditorShortcuts(active = true): void {
   useEffect(() => {
     if (!active) return;
     const handle = (event: KeyboardEvent) => {
-      if (isTypingTarget(event.target)) return;
+      if (isEditorMenuModalOpen() || isTypingTarget(event.target)) return;
       const state = useEditorStore.getState();
       const key = event.key.toLowerCase();
       if ((event.ctrlKey || event.metaKey) && key === 'g' && event.shiftKey) { event.preventDefault(); state.ungroupSelection(); return; }

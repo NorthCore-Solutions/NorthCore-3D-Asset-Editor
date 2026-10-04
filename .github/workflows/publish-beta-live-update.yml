@@ -70,6 +70,9 @@ jobs:
       - name: Build web app
         run: npm run build
 
+      - name: Verify removal of Legacy authoring
+        run: node scripts/check-legacy-authoring.mjs
+
       - name: Prepare and verify signing key
         shell: bash
         env:

@@ -1,40 +1,46 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { pauseMenuPlayback } from './menuPlayback';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { initializeLiveUpdates } from '../platform/liveUpdate';
 import { useEditorStore } from '../store/editorStore';
 import { animationStore } from '../animation/store';
-import { legacyStore } from '../animation/legacyStore';
-import { Dialog } from '../animation/Dialog';
+import { legacyMigrationController } from '../animation/migration/migrationController';
+import { globalTemplateLibrary } from '../animation/globalTemplateLibrary';
+import { EditorMenuDialog } from './EditorMenuDialog';
 import { EDITOR_VERSION } from './version';
 import '../animation/builder.css';
 import './editor-launcher.css';
 
 const AssetEditor = lazy(() => import('./App').then((module) => ({ default: module.App })));
 const AnimationBuilder = lazy(() =>
-  import('../animation/BuilderModule').then((module) => ({ default: module.BuilderModule }))
+  import('../animation/AnimationBuilder').then((module) => ({ default: module.AnimationBuilder }))
 );
 export function EditorLauncher() {
   const [editor, setEditor] = useState<'asset' | 'animation' | null>(null);
   const [exitOpen, setExitOpen] = useState(false);
   const [assetVisited, setAssetVisited] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpener, setMenuOpener] = useState<HTMLElement | null>(null);
+  const playbackResume = useRef<((resume: boolean) => void) | null>(null);
+  const openMenu = () => {
+    if (menuOpen || exitOpen) return;
+    playbackResume.current = editor === 'animation' ? pauseMenuPlayback() : null;
+    setMenuOpener(document.querySelector<HTMLElement>(editor === 'asset'
+      ? '.asset-editor-host .editor-menu-trigger' : '.animation-editor-host .editor-menu-trigger'));
+    setMenuOpen(true);
+  };
+  const closeMenu = (resume = true) => {
+    const finishPlayback = playbackResume.current;
+    playbackResume.current = null;
+    setMenuOpen(false); setExitOpen(false);
+    finishPlayback?.(resume && editor === 'animation' && Boolean(menuOpener?.isConnected));
+  };
   useEffect(() => {
     void initializeLiveUpdates();
+    void legacyMigrationController.loadStatus().catch(() => { /* The migration manager reports storage errors when opened. */ });
   }, []);
   useEffect(() => {
-    if (!menuOpen) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        setMenuOpen(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown, true);
-    return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [menuOpen]);
-  useEffect(() => {
     const unload = (event: BeforeUnloadEvent) => {
-      if (useEditorStore.getState().dirty || animationStore.dirty || legacyStore.dirty) {
+      if (useEditorStore.getState().dirty || animationStore.dirty || animationStore.persistenceUnsaved || legacyMigrationController.dirty || globalTemplateLibrary.dirty) {
         event.preventDefault();
         event.returnValue = '';
       }
@@ -43,21 +49,21 @@ export function EditorLauncher() {
     return () => window.removeEventListener('beforeunload', unload);
   }, []);
   const exit = () => {
-    if (editor === 'asset' ? useEditorStore.getState().dirty : animationStore.dirty || legacyStore.dirty)
+    if (legacyMigrationController.dirty || (editor === 'asset' ? useEditorStore.getState().dirty : animationStore.dirty || animationStore.persistenceUnsaved || globalTemplateLibrary.dirty))
       setExitOpen(true);
-    else setEditor(null);
+    else { closeMenu(false); setEditor(null); }
   };
   return (
     <>
       <Suspense fallback={<div className="editor-launcher">Editor wird geladen …</div>}>
         {assetVisited && (
           <div className="asset-editor-host" hidden={editor !== 'asset'}>
-            <AssetEditor active={editor === 'asset'} onOpenEditorMenu={() => setMenuOpen(true)} />
+            <AssetEditor active={editor === 'asset'} onOpenEditorMenu={() => openMenu()} />
           </div>
         )}
         {editor === 'animation' ? (
           <div className="animation-editor-host">
-            <AnimationBuilder onOpenEditorMenu={() => setMenuOpen(true)} />
+            <AnimationBuilder onOpenEditorMenu={openMenu} />
           </div>
         ) : (
           editor === null && (
@@ -87,45 +93,10 @@ export function EditorLauncher() {
           )
         )}
       </Suspense>
-      {menuOpen && editor && (
-        <div
-          className="editor-menu-backdrop"
-          role="presentation"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setMenuOpen(false);
-          }}
-        >
-          <section className="editor-menu-dialog" role="dialog" aria-modal="true" aria-labelledby="editor-menu-title">
-            <h2 id="editor-menu-title">Menü</h2>
-            <button
-              className="editor-menu-return"
-              type="button"
-              onClick={() => {
-                setMenuOpen(false);
-                exit();
-              }}
-            >Zur Editor-Auswahl</button>
-            <button className="editor-menu-resume" type="button" onClick={() => setMenuOpen(false)}>
-              Fortsetzen
-            </button>
-          </section>
-        </div>
-      )}
-      {exitOpen && (
-        <Dialog
-          title="Zur Editor-Auswahl?"
-          action="Zur Auswahl"
-          onCancel={() => setExitOpen(false)}
-          onSubmit={() => {
-            setExitOpen(false);
-            setEditor(null);
-          }}
-        >
-          <p>
-            Es gibt ungespeicherte Änderungen. Sie bleiben in dieser Sitzung erhalten. Speichere im Editor,
-            bevor du die App schließt.
-          </p>
-        </Dialog>
+      {(menuOpen || exitOpen) && editor && (
+        <EditorMenuDialog confirming={exitOpen} opener={menuOpener}
+          onClose={closeMenu} onReturn={exit}
+          onConfirm={() => { closeMenu(false); setEditor(null); }} />
       )}
     </>
   );

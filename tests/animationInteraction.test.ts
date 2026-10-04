@@ -1,11 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { encode } from 'fast-png';
 import { crc32, deflateSync } from 'node:zlib';
-import { LegacyImage, renderLegacy, resizeFace, facePlacement } from '../src/animation/legacy';
-import type { Definition, LegacyScene, Rig } from '../src/animation/legacy';
 import { AnimationStore, Stroke } from '../src/animation/store';
 import { blankLayer, rectMask } from '../src/animation/raster';
-import { decodePng } from '../src/animation/files';
+import { decodePng } from '../src/animation/png';
 import { decodeTemplates, encodeTemplates } from '../src/animation/templateLibrary';
 
 describe('migration interaction guarantees', () => {
@@ -109,79 +107,6 @@ describe('migration interaction guarantees', () => {
     expect(serialized).toContain('"originX": 300');
     expect(decodeTemplates(serialized)).toEqual(templates);
     expect(() => decodeTemplates('{"version":1,"templates":[{"id":"broken"}]}')).toThrow();
-  });
-  it.each([-1, 1])(
-    'face resize preserves the opposite corner and original aspect ratio (direction %i)',
-    (sign) => {
-      const asset = { width: 44, height: 40, anchorX: 27, anchorY: 22, file: 'eye.png' },
-        fixed = { x: 500, y: 300 };
-      const element = { x: 510, y: 315, width: 44, height: 40, state: 'open' };
-      const next = resizeFace(
-        element,
-        asset,
-        { x: fixed.x + sign * 88, y: fixed.y + sign * 80 },
-        { fixed, signX: sign, signY: sign }
-      );
-      const p = facePlacement(next, asset);
-      expect(next.width).toBe(88);
-      expect(next.height).toBe(80);
-      expect(p.x + (sign < 0 ? next.width : 0)).toBe(fixed.x);
-      expect(p.y + (sign < 0 ? next.height : 0)).toBe(fixed.y);
-      expect(asset.width).toBe(44);
-    }
-  );
-  it('legacy live eraser/face previews match committed renderer, including layer order and alpha', async () => {
-    const base = new LegacyImage(4, 4);
-    base.pixels.fill(0x663399ff);
-    const sprite = new LegacyImage(2, 2);
-    sprite.pixels.set([0x12345680, 0, 0x000000ff, 0x00ff00ff]);
-    const loader = (path: string) => Promise.resolve(path.startsWith('basis') ? base : sprite);
-    const rig: Rig = {
-      version: 1,
-      elements: { 'eyeLeft/open': { file: 'eye.png', width: 2, height: 2, anchorX: 0, anchorY: 0 } },
-    };
-    const d: Definition = {
-      version: 2,
-      id: 'test',
-      name: 'test',
-      basePose: 'fino_standing_neutral.png',
-      frames: [
-        {
-          durationMs: 100,
-          ops: [],
-          face: { leftEye: { x: 1, y: 1, width: 2, height: 2, state: 'open' } },
-          layers: [
-            { id: 'base', name: '', kind: 'base' },
-            { id: 'draw', name: '', kind: 'pixels', pixels: [{ x: 1, y: 1, rgba: 0x89abcdef }] },
-            { id: 'eye', name: '', kind: 'leftEye' },
-          ],
-        },
-      ],
-    };
-    let captured: LegacyScene | null = null;
-    await renderLegacy(d, 0, loader, rig, undefined, undefined, (scene) => {
-      captured = scene;
-    });
-    const scene = captured as unknown as LegacyScene;
-    const empty = new Map();
-    const erased: Definition = {
-      ...d,
-      frames: [
-        {
-          ...d.frames[0]!,
-          layers: d.frames[0]!.layers!.map((l) => (l.id === 'draw' ? { ...l, pixels: [] } : l)),
-        },
-      ],
-    };
-    const committed = await renderLegacy(erased, 0, loader, rig);
-    expect(scene.sample(1, 1, { layer: 'draw', pixels: empty })).toBe(committed.get(1, 1));
-    const moved = { ...d.frames[0]!.face!.leftEye!, x: 2, y: 0, width: 3, height: 3 };
-    const movedDefinition: Definition = { ...d, frames: [{ ...d.frames[0]!, face: { leftEye: moved } }] };
-    const movedImage = await renderLegacy(movedDefinition, 0, loader, rig);
-    for (let y = 0; y < 4; y++)
-      for (let x = 0; x < 4; x++)
-        expect(scene.sample(x, y, { part: 'leftEye', element: moved })).toBe(movedImage.get(x, y));
-    expect(base.get(1, 1)).toBe(0x663399ff);
   });
   it('layer visibility and topmost exact RGBA survive local history', () => {
     const s = new AnimationStore();

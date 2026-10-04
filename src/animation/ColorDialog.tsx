@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Dialog } from './Dialog';
-import { bytes, cssColor, hex, rgba } from './raster';
+import { bytes, cssColor, hex, rgba } from './colors';
 
 function rgbToHsv(color: number) {
   const [r, g, b] = bytes(color).map((v) => v / 255) as [number, number, number, number];

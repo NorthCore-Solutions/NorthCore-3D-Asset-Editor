@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "name": "V1 reference session",
+  "source": "empty",
+  "index": 1,
+  "active": "pixels-1",
+  "frames": [
+    { "duration": 400, "layers": [{ "id": "pixels-1", "name": "Pixels", "visible": true, "locked": false, "pixels": [[386, 287453953], [387, 287453952]] }] },
+    { "duration": 123, "layers": [{ "id": "pixels-1", "name": "Pixels", "visible": true, "locked": false, "pixels": [[386, 4294967295]] }] }
+  ],
+  "templates": [{ "id": "template-1", "name": "Template", "bounds": { "x": 2, "y": 3, "width": 1, "height": 1 }, "pixels": [[386, 287453953]] }],
+  "faces": [{ "id": "face-1", "name": "Face", "bounds": { "x": 2, "y": 3, "width": 1, "height": 1 }, "pixels": [[386, 4294967295]] }],
+  "reference": { "name": "Reference", "width": 1, "height": 1, "rgba": [17, 34, 51, 1], "bounds": { "x": 2, "y": 3, "width": 1, "height": 1 }, "visible": true, "aligned": false }
+}

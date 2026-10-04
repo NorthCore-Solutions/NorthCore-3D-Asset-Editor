@@ -1,6 +1,5 @@
 import type * as StoreModule from '../../src/animation/store';
 import type * as RasterModule from '../../src/animation/raster';
-import type * as LegacyModule from '../../src/animation/legacyStore';
 import type * as EditorModule from '../../src/store/editorStore';
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
@@ -128,7 +127,7 @@ test('native mouse strokes, history, sizes, exact picker, exclusive face/templat
   expect(errors).toEqual([]);
 });
 
-test('editor hamburger menu opens and closes on native and Legacy1024', async ({
+test('editor hamburger menu opens and closes on Raster128', async ({
   page,
 }) => {
   await launch(page);
@@ -148,14 +147,6 @@ test('editor hamburger menu opens and closes on native and Legacy1024', async ({
   await expect(page.getByRole('dialog', { name: 'Menü' })).toHaveCount(0);
 
   await page.setViewportSize({ width: 820, height: 1180 });
-  await page.getByLabel('Editor-Modus', { exact: true }).selectOption('legacy1024');
-  await expect(page.getByLabel('Legacy Zeichenfläche 1024')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Menü öffnen' })).toBeVisible();
-  await expect(page.locator('.ab-main-menus > :first-child')).toHaveClass(/ab-menu/);
-  await page.getByRole('button', { name: 'Menü öffnen' }).click();
-  await expect(page.getByRole('dialog', { name: 'Menü' })).toBeVisible();
-  await page.getByRole('button', { name: 'Fortsetzen' }).click();
-  expect(await page.locator('.ab-menubar').evaluate((el) => el.getBoundingClientRect().height)).toBeLessThanOrEqual(48);
 });
 
 test('reference original RGBA, wheel anchor and editor-only export', async ({ page }) => {
@@ -234,47 +225,6 @@ test('tablet touch drawing, pinch cancels stroke, panels keep canvas geometry', 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: 'test-results/tablet.png' });
   await context.close();
-});
-
-test('legacy loads with original rigs and retains frames across switching', async ({ page }) => {
-  const errors: string[] = [];
-  page.on('pageerror', (e) => errors.push(e.message));
-  await launch(page);
-  await page.getByLabel('Editor-Modus', { exact: true }).selectOption('legacy1024');
-  await expect(page.getByLabel('Legacy Zeichenfläche 1024')).toBeVisible();
-  await expect
-    .poll(() =>
-      page.evaluate(async () => {
-        const p = '/src/animation/legacyStore.ts';
-        const { legacyStore: s } = (await import(
-          performance
-            .getEntriesByType('resource')
-            .filter((e) => new URL(e.name).pathname === p)
-            .at(-1)?.name ?? p
-        )) as typeof LegacyModule;
-        return !!s.image;
-      })
-    )
-    .toBe(true);
-  await page.locator('.ab-toolbar').getByTitle('Neue Animation', { exact: true }).click();
-  await page.getByRole('dialog').getByLabel('Start').selectOption('preset');
-  await page.getByRole('dialog').getByLabel('Name', { exact: true }).press('Enter');
-  await expect(page.getByText('Face-Rig V2', { exact: true })).toBeVisible();
-  await page.getByTitle('Frame duplizieren', { exact: true }).click();
-  await page.getByLabel('Editor-Modus', { exact: true }).selectOption('raster128');
-  await page.getByLabel('Editor-Modus', { exact: true }).selectOption('legacy1024');
-  await expect(page.getByRole('button', { name: 'Frame 2 400 ms', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'idle_breathing.finoanim.json', exact: true }).click();
-  await page.getByRole('dialog').getByRole('button', { name: 'Abbrechen', exact: true }).focus();
-  await page.keyboard.press('Enter');
-  await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(page.locator('.ab-title')).not.toHaveText('Neue Animation');
-  await page.getByRole('combobox', { name: 'Arbeitsbereich', exact: true }).selectOption('Pixel');
-  await expect(page.getByTitle('Information: Gesicht', { exact: true })).toHaveCount(0);
-  await page.getByRole('combobox', { name: 'Arbeitsbereich', exact: true }).selectOption('Kombiniert');
-  await expect(page.getByTitle('Information: Gesicht', { exact: true })).toBeVisible();
-  await page.screenshot({ path: 'test-results/legacy.png' });
-  expect(errors).toEqual([]);
 });
 
 test('reference only moves with Grab, undo restores it, brush popup scrolls without a scrollbar', async ({

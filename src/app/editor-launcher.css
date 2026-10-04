@@ -32,19 +32,15 @@
   line-height: 1;
 }
 
-.editor-menu-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: grid;
-  place-items: center;
-  padding: 18px;
+.editor-menu-dialog::backdrop {
   background: #07090bc2;
   backdrop-filter: blur(5px);
 }
 
 .editor-menu-dialog {
-  width: min(460px, 100%);
+  width: min(460px, calc(100% - 36px));
+  margin: auto;
+  color: inherit;
   padding: 30px;
   border: 1px solid #59656d;
   border-radius: 12px;

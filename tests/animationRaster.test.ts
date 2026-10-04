@@ -1,20 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { AnimationStore, Stroke } from '../src/animation/store';
-import {
-  brushBounds,
-  bytes,
-  key,
-  nativePose,
-  production,
-  referenceSample,
-  render,
-  shiftReference,
-  sourceLayers,
-  Viewport,
-} from '../src/animation/raster';
+import { brushBounds, key, nativePose, production, referenceSample, render, shiftReference, sourceLayers, Viewport } from '../src/animation/raster';
+import { bytes } from '../src/animation/colors';
 import type { Reference } from '../src/animation/raster';
-import { decodePng, REFERENCE_NAMES, restoreSession, serializeSession } from '../src/animation/files';
+import { decodePng } from '../src/animation/png';
+import { REFERENCE_NAMES, restoreSession, serializeSession } from '../src/animation/files';
 import { encode } from 'fast-png';
 
 function empty() {
@@ -159,6 +150,9 @@ describe('ported Raster128 contract', () => {
     s.duration(123);
     const restored = empty();
     restoreSession(restored, serializeSession(s));
+    // V2 persists content, not the currently viewed frame.
+    expect(restored.state.index).toBe(0);
+    restored.frameAt(s.state.index);
     expect(restored.frame.duration).toBe(123);
     expect(render(restored.frame.layers)).toEqual(render(s.frame.layers));
     s.undo();

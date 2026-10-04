@@ -1,5 +1,6 @@
-import type { LegacyTemplate } from './legacyStore';
+import type { Point } from './raster';
 import type { Pixel } from './legacy';
+export type LegacyTemplate = { id: string; name: string; width: number; height: number; pixels: Pixel[]; origin: Point };
 
 /** The existing Dart FinoTemplateLibrary format; no image conversion. */
 export function encodeTemplates(templates: LegacyTemplate[]): string {
