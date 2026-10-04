@@ -11,7 +11,7 @@ async function prepare(page: Page) {
       .filter((entry) => new URL(entry.name).pathname === path).at(-1)?.name ?? path) as typeof StoreModule;
     store.source('empty');
     new Stroke(store, { x: 2, y: 3 }, false).commit();
-    store.saveAsset('Template', false); store.saveAsset('Face', true);
+    store.saveAsset('Template');
     store.markSaved(store.captureContent());
   });
 }
@@ -41,10 +41,5 @@ test('template rename/delete UI tracks dirty content and local IndexedDB restore
   await expect(page.locator('.ab-status .ab-unsaved')).toHaveCount(0);
   await page.getByRole('tab', { name: 'Vorlagen', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Renamed template', exact: true })).toBeVisible();
-  await page.evaluate(async () => {
-    const path = '/src/animation/store.ts';
-    const { animationStore: store } = await import(performance.getEntriesByType('resource')
-      .filter((entry) => new URL(entry.name).pathname === path).at(-1)?.name ?? path) as typeof StoreModule;
-    return store.faces.length;
-  }).then((faces) => expect(faces).toBe(1));
+
 });

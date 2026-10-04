@@ -1,30 +1,15 @@
-/** Metadata only: no Legacy rendering or conversion semantics. */
+/** Document identity and ordinary author metadata. */
 export type JsonValue = string | number | boolean | null | readonly JsonValue[] | JsonObject;
 export type JsonObject = { readonly [key: string]: JsonValue };
 export type DocumentMetadata = {
   readonly id: string;
   readonly reactionState?: string;
   readonly provenance?: {
-    readonly kind: 'native' | 'raster-v1' | 'legacy' | 'import';
+    readonly kind: 'native' | 'raster-v1' | 'import';
     readonly sourceId?: string;
     readonly fileName?: string;
     readonly storageKey?: string;
     readonly sha256?: string;
-    readonly archiveId?: string;
-  };
-  readonly migration?: {
-    readonly reportVersion: 1;
-    readonly stage: 'assessment' | 'conversion';
-    readonly report: JsonObject;
-    readonly archiveId?: string;
-    readonly converter?: { readonly name: string; readonly version: string };
-  };
-  readonly legacy?: {
-    readonly formatVersion: number;
-    readonly rigVersion?: 1 | 2;
-    readonly basePose: string;
-    readonly definitionId?: string;
-    readonly addonRoot?: string;
   };
 };
 
@@ -53,31 +38,18 @@ function jsonCopy(value: unknown, depth = 0): JsonValue {
 }
 /** Validate, detach from the caller, and deeply freeze for reference-based saved baselines. */
 export function parseDocumentMetadata(value: unknown): DocumentMetadata {
-  const data = fields(value, ['id', 'reactionState', 'provenance', 'migration', 'legacy']);
+  const raw = object(value);
+  const data = Object.fromEntries(Object.entries(raw).filter(([key]) => ['id', 'reactionState', 'provenance'].includes(key)));
+  if (data.provenance && object(data.provenance).kind === 'legacy') delete data.provenance;
   text(data.id);
   if ('reactionState' in data && typeof data.reactionState !== 'string') invalid();
   if ('provenance' in data) {
-    const p = fields(data.provenance, ['kind', 'sourceId', 'fileName', 'storageKey', 'sha256', 'archiveId']);
-    if (typeof p.kind !== 'string' || !['native', 'raster-v1', 'legacy', 'import'].includes(p.kind)) invalid();
-    optionalTexts(p, ['sourceId', 'fileName', 'storageKey', 'sha256', 'archiveId']);
+    const original = object(data.provenance);
+    const p = fields(Object.fromEntries(Object.entries(original).filter(([key]) => key !== 'archiveId')), ['kind', 'sourceId', 'fileName', 'storageKey', 'sha256']);
+    if (typeof p.kind !== 'string' || !['native', 'raster-v1', 'import'].includes(p.kind)) invalid();
+    optionalTexts(p, ['sourceId', 'fileName', 'storageKey', 'sha256']);
     if ('sha256' in p && !/^[a-f0-9]{64}$/.test(String(p.sha256))) invalid();
-  }
-  if ('migration' in data) {
-    const m = fields(data.migration, ['reportVersion', 'stage', 'report', 'archiveId', 'converter']);
-    if (m.reportVersion !== 1 || typeof m.stage !== 'string' || !['assessment', 'conversion'].includes(m.stage)) invalid();
-    object(m.report);
-    optionalTexts(m, ['archiveId']);
-    if ('converter' in m) {
-      const c = fields(m.converter, ['name', 'version']);
-      text(c.name); text(c.version);
-    }
-  }
-  if ('legacy' in data) {
-    const l = fields(data.legacy, ['formatVersion', 'rigVersion', 'basePose', 'definitionId', 'addonRoot']);
-    if (!Number.isSafeInteger(l.formatVersion) || Number(l.formatVersion) < 1) invalid();
-    if ('rigVersion' in l && l.rigVersion !== 1 && l.rigVersion !== 2) invalid();
-    text(l.basePose);
-    optionalTexts(l, ['definitionId', 'addonRoot']);
+    data.provenance = p;
   }
   return jsonCopy(data) as DocumentMetadata;
 }

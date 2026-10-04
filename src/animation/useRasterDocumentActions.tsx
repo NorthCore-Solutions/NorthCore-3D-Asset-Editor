@@ -44,7 +44,7 @@ export function useRasterDocumentActions({ setModal, setMessage, report }: Pick<
             <input name="name" defaultValue="Neue Rasteranimation" required autoFocus />
           </label>
           <label>
-            Grundpose
+            Ausgangszustand
             <select name="source" defaultValue={store.state.source}>
               {Object.entries(SOURCES).map(([id, label]) => (
                 <option key={id} value={id}>

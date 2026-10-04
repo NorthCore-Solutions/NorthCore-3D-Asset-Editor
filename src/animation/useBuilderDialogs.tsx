@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { animationStore as store } from './store';
 import type { PixelAsset, Rect } from './raster';
 import { textField, number } from './builderForm';
@@ -12,13 +12,12 @@ import type { HelpTopic } from './help';
 export function useBuilderDialogs() {
   const [modal, setModal] = useState<DialogConfig | null>(null);
   const [message, setMessage] = useState('Bereit');
-  const [faceSave, setFaceSave] = useState(false);
   const [colorOpen, setColorOpen] = useState(false);
-  const report = (task: Promise<unknown>) => {
+  const report = useCallback((task: Promise<unknown>) => {
     void task.catch((e: unknown) =>
       setMessage(e instanceof Error ? e.message : 'Aktion fehlgeschlagen.')
     );
-  };
+  }, []);
   const info = (topic: HelpTopic) => setModal({ title: topic, content: <p>{help[topic]}</p> });
   const infoButton = (topic: HelpTopic) => (
     <button
@@ -44,13 +43,12 @@ export function useBuilderDialogs() {
       },
     });
   const saveTemplate = () => {
-    setFaceSave(false);
     setModal({
       title: 'Auswahl als Vorlage speichern',
       content: null,
       action: 'Speichern',
       submit: (data) => {
-        const saved = store.saveAsset(textField(data, 'name'), data.has('face'));
+        const saved = store.saveAsset(textField(data, 'name'));
         setMessage(saved ? `${saved.name} gespeichert` : 'Keine bearbeitbaren Pixel ausgewählt.');
       },
     });
@@ -119,15 +117,6 @@ export function useBuilderDialogs() {
             <label>
               Vorlagen-Name
               <input name="name" required autoFocus defaultValue="Neue Vorlage" />
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                name="face"
-                checked={faceSave}
-                onChange={(e) => setFaceSave(e.target.checked)}
-              />
-              Als Gesichts-Asset speichern
             </label>
           </>
         ) : (

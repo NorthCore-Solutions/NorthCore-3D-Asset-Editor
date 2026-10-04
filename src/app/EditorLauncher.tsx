@@ -3,7 +3,6 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { initializeLiveUpdates } from '../platform/liveUpdate';
 import { useEditorStore } from '../store/editorStore';
 import { animationStore } from '../animation/store';
-import { legacyMigrationController } from '../animation/migration/migrationController';
 import { globalTemplateLibrary } from '../animation/globalTemplateLibrary';
 import { EditorMenuDialog } from './EditorMenuDialog';
 import { EDITOR_VERSION } from './version';
@@ -36,11 +35,10 @@ export function EditorLauncher() {
   };
   useEffect(() => {
     void initializeLiveUpdates();
-    void legacyMigrationController.loadStatus().catch(() => { /* The migration manager reports storage errors when opened. */ });
   }, []);
   useEffect(() => {
     const unload = (event: BeforeUnloadEvent) => {
-      if (useEditorStore.getState().dirty || animationStore.dirty || animationStore.persistenceUnsaved || legacyMigrationController.dirty || globalTemplateLibrary.dirty) {
+      if (useEditorStore.getState().dirty || animationStore.dirty || animationStore.persistenceUnsaved || globalTemplateLibrary.dirty) {
         event.preventDefault();
         event.returnValue = '';
       }
@@ -49,7 +47,7 @@ export function EditorLauncher() {
     return () => window.removeEventListener('beforeunload', unload);
   }, []);
   const exit = () => {
-    if (legacyMigrationController.dirty || (editor === 'asset' ? useEditorStore.getState().dirty : animationStore.dirty || animationStore.persistenceUnsaved || globalTemplateLibrary.dirty))
+    if ((editor === 'asset' ? useEditorStore.getState().dirty : animationStore.dirty || animationStore.persistenceUnsaved || globalTemplateLibrary.dirty))
       setExitOpen(true);
     else { closeMenu(false); setEditor(null); }
   };

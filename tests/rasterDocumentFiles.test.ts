@@ -36,9 +36,7 @@ it('browser exports a complete V2 document and imports it without content loss',
   await importV1();
   store.addLayer(); store.addFrame(true);
   store.setDocumentMetadata({ id: 'portable-id', reactionState: 'happy',
-    provenance: { kind: 'legacy', archiveId: 'archive-id', fileName: 'original.finoanim.json' },
-    legacy: { formatVersion: 1, rigVersion: 2, basePose: 'reading', addonRoot: 'addons_normalized' },
-    migration: { reportVersion: 1, stage: 'assessment', report: { issues: [{ code: 'blocked' }], migrationPerformed: false } },
+    provenance: { kind: 'native' },
   });
   const expected = serializeSession(store), content = store.captureContent(), past = store.past;
   expect(store.dirty).toBe(true);
@@ -51,7 +49,6 @@ it('browser exports a complete V2 document and imports it without content loss',
   expect(await importRasterDocument(store, download!)).toBe('imported');
   expect(serializeSession(store)).toBe(expected);
   expect(store.state.frames).toHaveLength(3); expect(store.state.frames[1]!.layers).toHaveLength(2);
-  expect(store.templates).toHaveLength(1); expect(store.faces).toHaveLength(1);
   expect(store.state.index).toBe(0); expect(store.dirty).toBe(false);
   expect(store.past).toHaveLength(0); expect(store.future).toHaveLength(0);
 });
@@ -88,15 +85,15 @@ it.each([
   JSON.stringify({ ...v1, frames: [{ duration: 1, layers: [{ ...v1.frames[0]!.layers[0], visible: 'yes' }] }] }),
   JSON.stringify({ ...v1, frames: [{ duration: 1, layers: [{ ...v1.frames[0]!.layers[0], pixels: [[16384, 1]] }] }] }),
   JSON.stringify({ ...v1, templates: [{ ...v1.templates[0], bounds: { x: 0.5, y: 0, width: 1, height: 1 } }] }),
-  JSON.stringify({ ...v1, faces: null }), JSON.stringify({ ...v1, reference: { ...v1.reference, aligned: 1 } }),
+JSON.stringify({ ...v1, reference: { ...v1.reference, aligned: 1 } }),
   JSON.stringify({ ...v1, reference: { ...v1.reference, bounds: { x: 0, y: 0, width: -1, height: 1 } } }),
   JSON.stringify({ version: 1, name: 'Legacy', basePose: 'reading', frames: [] }),
 ])('invalid portable data is rejected atomically: %s', async (json) => {
   await importV1(); store.duration(250); store.play();
-  const state = store.state, past = store.past, collections = [store.templates, store.faces], session = store.captureContent();
+  const state = store.state, past = store.past, collections = [store.templates], session = store.captureContent();
   await expect(importRasterDocument(store, new Blob([json]))).rejects.toThrow();
   expect(store.state).toBe(state); expect(store.past).toBe(past);
-  expect([store.templates, store.faces]).toEqual(collections);
+  expect([store.templates]).toEqual(collections);
   expect(store.isCurrentSession(session)).toBe(true); expect(store.playing).toBe(true); expect(store.dirty).toBe(true);
 });
 

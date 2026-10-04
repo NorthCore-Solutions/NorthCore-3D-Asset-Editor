@@ -3,10 +3,10 @@ import { bounds, contains, rectMask } from './raster';
 import type { Rect } from './raster';
 import type { AnimationStore } from './store';
 import { emptyGlobalLibrary, parseGlobalLibrary } from './globalTemplateFormat';
-import type { GlobalTemplate, GlobalTemplateDocument, LibraryReceipt } from './globalTemplateFormat';
+import type { GlobalTemplate, GlobalTemplateDocument } from './globalTemplateFormat';
 import { localSessionStorage, sameStorageHead, StorageConflictError } from './storage';
 import type { SessionClient, SessionRecord } from './storage';
-import { canonicalJson, sha256 } from './contentHash';
+import { canonicalJson } from './contentHash';
 
 export const GLOBAL_TEMPLATE_KEY = '__raster128_global_templates_v1';
 export const GLOBAL_TEMPLATE_EXTENSION = '.raster128-library.json';
@@ -43,13 +43,7 @@ function append(document: GlobalTemplateDocument, templates: GlobalTemplate[]) {
   });
   return { document: { ...document, templates: [...document.templates, ...added] }, ids: added.map((t) => t.id) };
 }
-async function validatedDocument(json: string) {
-  const document = parseGlobalLibrary(json);
-  for (const receipt of document.migrations) if (await sha256(receipt.originalJson) !== receipt.sourceSha256)
-    throw Error('Ungültige Prüfsumme des archivierten Legacy-Bibliotheksoriginals.');
-  return document;
-}
-
+function validatedDocument(json: string) { return Promise.resolve(parseGlobalLibrary(json)); }
 /** Global lifetime: sessions never cancel or adopt library writes. Document dirty is separate. */
 export class GlobalTemplateLibrary {
   private document = emptyGlobalLibrary();
@@ -189,27 +183,6 @@ export class GlobalTemplateLibrary {
       this.document = parsed; this.operations = []; this.ready = true; this.error = null;
       this.revision++; this.emit(); void this.save();
     } else this.change(() => parsed);
-  }
-  /** Native batch import; compatibility validation/consent lives in the import layer. */
-  async importTemplates(templates: GlobalTemplate[], receipt: Omit<LibraryReceipt, 'templateIds'>) {
-    const captured = structuredClone({ templates, receipt });
-    await validatedDocument(JSON.stringify({ ...emptyGlobalLibrary(), migrations: [{ ...captured.receipt, templateIds: [] }] }));
-    await this.load();
-    if (!this.ready) throw Error(this.error ?? 'Bibliothek ist nicht geladen.');
-    if (this.document.migrations.some((r) => r.sourceSha256 === captured.receipt.sourceSha256)) {
-      if (this.dirty) await this.retry();
-      await this.queue;
-      if (this.dirty) throw Error(this.error ?? 'Bibliothek ist noch nicht gespeichert.');
-      return 'existing';
-    }
-    this.change((d) => {
-      if (d.migrations.some((r) => r.sourceSha256 === captured.receipt.sourceSha256)) return d;
-      const added = append(d, captured.templates);
-      return { ...added.document, migrations: [...d.migrations, { ...captured.receipt, templateIds: added.ids }] };
-    });
-    await this.queue;
-    if (this.dirty) throw Error(this.error ?? 'Bibliotheksänderungen sind noch nicht vollständig gespeichert.');
-    return 'migrated';
   }
 
 }

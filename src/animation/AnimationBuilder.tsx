@@ -10,15 +10,13 @@ import { BuilderLibraryPanel, BuilderLibraryFileInput } from './BuilderLibraryPa
 import { BuilderInspector } from './BuilderInspector';
 import { BuilderTimeline } from './BuilderTimeline';
 import { RasterCanvas } from './RasterCanvas';
-import { LegacyMigrationPanel } from './migration/LegacyMigrationPanel';
-import { LegacyTemplateImport } from './migration/LegacyTemplateImport';
 import './builder.css';
 
 export function AnimationBuilder({ onOpenEditorMenu }: { onOpenEditorMenu?: () => void }) {
   useSyncExternalStore(store.subscribe, store.snapshot);
   useSyncExternalStore(library.subscribe, library.snapshot);
   useEffect(() => {
-    return () => { store.pause(false); store.cancelFacePreview(); };
+    return () => { store.pause(false); };
   }, []);
   const ui = useBuilderDialogs();
   const documents = useRasterDocumentActions(ui);
@@ -36,8 +34,7 @@ export function AnimationBuilder({ onOpenEditorMenu }: { onOpenEditorMenu?: () =
       <main className="ab-workspace" data-timeline-open={timeline}>
         <RasterCanvas store={store} />
         <BuilderLibraryPanel open={left} onToggle={() => setLeft(!left)} tab={tab} setTab={setTab}
-          ui={ui} documents={documents} migrationPanel={<LegacyMigrationPanel />}
-          legacyTemplateImport={<LegacyTemplateImport onDialog={ui.setModal} onMessage={ui.setMessage} />} />
+          ui={ui} documents={documents} />
         <BuilderInspector open={right} onToggle={() => setRight(!right)} mode={mode} ui={ui} />
         <BuilderTimeline open={timeline} onToggle={() => setTimeline(!timeline)} ui={ui} />
       </main>

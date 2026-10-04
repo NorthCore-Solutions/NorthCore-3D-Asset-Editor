@@ -30,7 +30,7 @@ function record(entries: Map<string, string>, key: string): SessionRecord {
 }
 /** Synchronous scoped transactions retain IDB atomicity; optional APIs support small injected test drivers. */
 export interface SessionStorage {
-  run<T>(change: (entries: Map<string, string>) => T, keys?: readonly string[], documentId?: string,
+  run<T>(change: (entries: Map<string, string>) => T, keys?: readonly string[],
     prepared?: ReadonlyMap<string, StorageMetadata | undefined>): Promise<T>;
   readKeys?(keys: readonly string[]): Promise<Map<string, string>>;
   has?(key: string): Promise<boolean>;
@@ -55,19 +55,6 @@ export async function queryStorage(storage: SessionStorage, query: StorageQuery)
   const items = candidates.slice(0, pageLimit(query));
   return { items, ...(candidates.length > items.length ? { next: items.at(-1)!.key } : {}) };
 }
-/** Resolve historical document IDs in bounded batches only when an ID-sensitive migration needs them. */
-export async function ensureDocumentCatalog(storage: SessionStorage) {
-  if (!storage.enrich) return;
-  let page: StoragePage;
-  do {
-    page = await queryStorage(storage, { kind: 'raster', detailsKnown: 0, limit: 25 });
-    for (const meta of page.items) {
-      const value = (await readStorageKeys(storage, [meta.key])).get(meta.key);
-      if (value !== undefined) await storage.enrich(meta.key, value, await preparedMetadata(meta.key, value));
-    }
-  } while (page.next);
-}
-
 type Notice = { writer: string; keys: string[] };
 /** A client owns observed bases, never advancing them merely because a foreign write is announced. */
 export function createSessionClient(driver: SessionStorage = indexedSessionStorage) {
@@ -117,7 +104,7 @@ export function createSessionClient(driver: SessionStorage = indexedSessionStora
       const value = record(rows, key);
       if (value.value !== undefined && driver.enrich) {
         const meta = await driver.metadata?.(key);
-        if (!meta?.detailsKnown || ((meta.kind === 'legacy-source' || meta.kind === 'legacy-library') && !meta.sourceSha256))
+        if (!meta?.detailsKnown)
           await driver.enrich(key, value.value, await preparedMetadata(key, value.value));
       }
       known.set(key, value); return structuredClone(value);
@@ -143,12 +130,12 @@ export function createSessionClient(driver: SessionStorage = indexedSessionStora
         if (!sameSessionRecord(current, base)) throw new StorageConflictError(key);
         const next = { value, revision: nextRevision(current, writer) };
         entries.set(key, value); entries.set(revisionKey(key), JSON.stringify(next.revision)); return next;
-      }, [key, revisionKey(key)], undefined, new Map([[key, metadata]]));
+      }, [key, revisionKey(key)], new Map([[key, metadata]]));
       known.set(key, saved); publish([key]); return structuredClone(saved);
     },
     // Only synchronous changes derived from current entries belong here. Cached snapshots use write(expected);
     // multi-phase owners (journals) compare their own captured revision in the callback.
-    async run<T>(change: (entries: Map<string, string>) => T, keys?: readonly string[], documentId?: string): Promise<T> {
+    async run<T>(change: (entries: Map<string, string>) => T, keys?: readonly string[]): Promise<T> {
       check(); start();
       const saved = await driver.run((raw) => {
         check(); const entries = new Map([...raw].filter(([key]) => !key.startsWith(REVISION_PREFIX))), before = new Map(entries);
@@ -161,7 +148,7 @@ export function createSessionClient(driver: SessionStorage = indexedSessionStora
           changed.push(key);
         }
         return { result, changed };
-      }, keys ? [...new Set(keys.flatMap((key) => [key, revisionKey(key)]))] : undefined, documentId);
+      }, keys ? [...new Set(keys.flatMap((key) => [key, revisionKey(key)]))] : undefined);
       publish(saved.changed); return saved.result;
     },
   };
@@ -169,7 +156,6 @@ export function createSessionClient(driver: SessionStorage = indexedSessionStora
 }
 export type SessionClient = ReturnType<typeof createSessionClient>;
 export const localSessionStorage = createSessionClient();
-export async function saveLocalSession(name: string, json: string): Promise<void> { await localSessionStorage.write(name, json); }
 export function sameStorageHead(head: { revision: SessionRecord['revision']; exists: boolean }, base: SessionRecord) {
   return head.exists === (base.value !== undefined) && head.revision?.sequence === base.revision?.sequence && head.revision?.writeId === base.revision?.writeId;
 }

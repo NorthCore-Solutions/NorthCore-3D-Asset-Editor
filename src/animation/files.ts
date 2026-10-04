@@ -3,12 +3,7 @@ import { decodePng } from './png';
 import { localSessionStorage, sameStorageHead, StorageConflictError } from './storage';
 import type { SessionClient, SessionRecord } from './storage';
 import { saveBlobAs } from '../platform/nativeFileDialog';
-import { production, SOURCES } from './raster';
-import { parsePoseReference } from './nativePoses';
-import type { NativePoseReference } from './nativePoses';
-import { FACE_SLOTS, parseNativeFace } from './nativeFaces';
-import type { NativeFace } from './nativeFaces';
-import { parseRasterRecipe, replayRasterRecipe, sameRasterPixels } from './rasterOperations';
+import { production } from './raster';
 import type { Frame, Layer, PixelAsset, Rect, Reference, SourceId } from './raster';
 import type { AnimationStore } from './store';
 import { parseDocumentMetadata, upgradeV1Metadata } from './document';
@@ -78,9 +73,8 @@ type SavedAsset = Omit<PixelAsset, 'pixels'> & { pixels: [number, number][] };
 type SessionContent = {
   name: string;
   source: SourceId;
-  frames: { duration: number; layers: SavedLayer[]; pose?: NativePoseReference; nativeFace?: NativeFace }[];
+  frames: { duration: number; layers: SavedLayer[];  }[];
   templates: SavedAsset[];
-  faces: SavedAsset[];
   reference: (Omit<Reference, 'rgba'> & { rgba: number[] }) | null;
 };
 export type RasterSessionV1 = SessionContent & { version: 1; index: number; active: string };
@@ -105,11 +99,7 @@ export async function importRasterDocument(store: AnimationStore, file: Blob | n
 }
 export function serializeSession(store: AnimationStore): string {
   const asset = (a: PixelAsset): SavedAsset => ({ ...a, pixels: [...a.pixels] });
-  const layer = (l: Layer): SavedLayer => {
-    const recipe = l.recipe ? parseRasterRecipe(l.recipe) : undefined;
-    if (recipe && !sameRasterPixels(l.pixels, replayRasterRecipe(recipe))) throw Error('Replay stimmt nicht mit den gespeicherten Pixeln überein.');
-    return { ...l, pixels: [...l.pixels], ...(recipe ? { recipe } : {}) };
-  };
+  const layer = (l: Layer): SavedLayer => ({ id: l.id, name: l.name, visible: l.visible, locked: l.locked, pixels: [...l.pixels] });
   const data: RasterSessionV2 = {
     version: 2,
     name: store.state.name,
@@ -117,18 +107,15 @@ export function serializeSession(store: AnimationStore): string {
     metadata: parseDocumentMetadata(store.state.metadata),
     frames: store.state.frames.map((f) => ({
       duration: f.duration,
-      ...(f.pose ? { pose: parsePoseReference(f.pose) } : {}),
-      ...(f.nativeFace ? { nativeFace: parseNativeFace(f.nativeFace) } : {}),
       layers: f.layers.map(layer),
     })),
     templates: store.templates.map(asset),
-    faces: store.faces.map(asset),
     reference: store.reference ? { ...store.reference, rgba: [...store.reference.rgba] } : null,
   };
   return JSON.stringify(data);
 }
 /** Shared, pure document parser: validates every field before any editor mutation. */
-export function parseRasterDocument(json: string): Pick<AnimationStore, 'state' | 'templates' | 'faces'> {
+export function parseRasterDocument(json: string): Pick<AnimationStore, 'state' | 'templates'> {
   const s = JSON.parse(json) as RasterSessionV1 | RasterSessionV2;
   if (!s || (s.version !== 1 && s.version !== 2)) throw Error('Unbekannte Raster-Dokumentversion.');
   if (
@@ -136,7 +123,7 @@ export function parseRasterDocument(json: string): Pick<AnimationStore, 'state' 
     !s.frames.length ||
     s.frames.length > 1000 ||
     typeof s.name !== 'string' ||
-    typeof s.source !== 'string' || !Object.hasOwn(SOURCES, s.source)
+    typeof s.source !== 'string'
   )
     throw Error('Ungültige Builder-Sitzung.');
   const pixels = (items: unknown) => {
@@ -167,18 +154,11 @@ export function parseRasterDocument(json: string): Pick<AnimationStore, 'state' 
   const frames = s.frames.map((f) => {
     if (!f || !Number.isInteger(f.duration) || f.duration < 1 || !Array.isArray(f.layers))
       throw Error('Ungültiger Frame.');
-    const markers = f.layers.filter((l) => l && 'nativeFaceSlot' in l).map((l) => l.nativeFaceSlot);
-    if (new Set(markers).size !== markers.length) throw Error('Doppelte native Face-Slots.');
-    const face = 'nativeFace' in f ? parseNativeFace(f.nativeFace) : undefined;
-    if (face && (!f.pose || face.poseId !== parsePoseReference(f.pose).poseId)) throw Error('Gesicht und Grundpose widersprechen sich.');
-    return { ...f, ...(face ? { nativeFace: face } : {}), ...('pose' in f ? { pose: parsePoseReference(f.pose) } : {}), layers: f.layers.map((l) => {
+    return { duration: f.duration, layers: f.layers.map((l) => {
       named(l);
-      if (typeof l.visible !== 'boolean' || typeof l.locked !== 'boolean' ||
-        ('faceId' in l && (typeof l.faceId !== 'string' || !l.faceId)) ||
-        ('nativeFaceSlot' in l && !FACE_SLOTS.some((s) => s === l.nativeFaceSlot))) throw Error('Ungültiger Layer.');
-      const data = pixels(l.pixels), recipe = 'recipe' in l ? parseRasterRecipe(l.recipe) : undefined;
-      if (recipe && !sameRasterPixels(data, replayRasterRecipe(recipe))) throw Error('Replay stimmt nicht mit den gespeicherten Pixeln überein.');
-      return { ...l, pixels: data, ...(recipe ? { recipe } : {}) };
+      if (typeof l.visible !== 'boolean' || typeof l.locked !== 'boolean') throw Error('Ungültiger Layer.');
+      // Removed optional authoring metadata never controls saved pixel content.
+      return { id: l.id, name: l.name, visible: l.visible, locked: l.locked, pixels: pixels(l.pixels) };
     }) };
   });
   const assets = (items: SavedAsset[]) => {
@@ -188,8 +168,7 @@ export function parseRasterDocument(json: string): Pick<AnimationStore, 'state' 
       return { ...a, pixels: pixels(a.pixels) };
     });
   };
-  const templates = assets(s.templates),
-    faces = assets(s.faces);
+  const templates = assets(s.templates);
   const ref = s.reference;
   if (
     ref &&
@@ -210,18 +189,18 @@ export function parseRasterDocument(json: string): Pick<AnimationStore, 'state' 
     name: s.name, source: s.source,
     frames: frames.map((f) => ({ ...f, layers: f.layers.map((l) => ({ ...l, pixels: [...l.pixels].sort(([a], [b]) => a - b) })) })),
     templates: templates.map((a) => ({ ...a, pixels: [...a.pixels].sort(([a], [b]) => a - b) })),
-    faces: faces.map((a) => ({ ...a, pixels: [...a.pixels].sort(([a], [b]) => a - b) })), reference: ref,
+    reference: ref,
   }, s.source);
   const state = {
     metadata,
     name: s.name,
-    source: s.source,
+    source: s.source === 'transparent' ? 'transparent' as const : 'empty' as const,
     index: s.version === 1 && Number.isInteger(s.index) ? Math.max(0, Math.min(frames.length - 1, s.index)) : 0,
-    active: s.version === 1 && typeof s.active === 'string' ? s.active : frames[0]!.layers.find((l) => !l.locked && !l.faceId)?.id ?? '',
+    active: s.version === 1 && typeof s.active === 'string' ? s.active : frames[0]!.layers.find((l) => !l.locked)?.id ?? '',
     frames,
     reference: ref ? { ...ref, rgba: new Uint8Array(ref.rgba) } : null,
   };
-  return { state, templates, faces };
+  return { state, templates };
 }
 export function restoreSession(store: AnimationStore, json: string) {
   const document = parseRasterDocument(json);
@@ -233,7 +212,6 @@ export function restoreSession(store: AnimationStore, json: string) {
   store.referenceSelected = false;
   store.state = document.state;
   store.templates = document.templates;
-  store.faces = document.faces;
   store.resetSavedContent();
   store.emit();
 }
@@ -281,9 +259,7 @@ export async function saveRasterSession(store: AnimationStore, options: { expect
   try {
     const json = serializeSession(store);
     const expected = options.expected ?? base.records.get(content.name) ?? { value: undefined, revision: null };
-    if (content.name.startsWith('__') || content.name.endsWith('.finoanim.json') ||
-      (expected.value !== undefined && /^Raster-Migration .*\.raster128\.json$/.test(content.name)))
-      throw Error('Dieser Speicherkey gehört zu Original-/Migrationsdaten. Raster-Dokument unter einem anderen Namen sichern.');
+    if (content.name.startsWith('__')) throw Error('Reservierter Speicherkey.');
     store.localPersistence = { key: content.name, status: 'saving' }; store.emit();
     const written = await storage.write(content.name, json, expected);
     if (!store.isCurrentSession(content)) return 'stale';

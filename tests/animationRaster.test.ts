@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { AnimationStore, Stroke } from '../src/animation/store';
-import { brushBounds, key, nativePose, production, referenceSample, render, shiftReference, sourceLayers, Viewport } from '../src/animation/raster';
+import { brushBounds, key, production, referenceSample, render, shiftReference, sourceLayers, Viewport } from '../src/animation/raster';
 import { bytes } from '../src/animation/colors';
 import type { Reference } from '../src/animation/raster';
 import { decodePng } from '../src/animation/png';
@@ -19,12 +19,6 @@ function empty() {
   return s;
 }
 describe('ported Raster128 contract', () => {
-  it('native standing pose matches every Dart RGBA byte', () => {
-    expect(nativePose().size).toBe(3514);
-    expect(Buffer.from(render(sourceLayers('fino-standing-neutral-128')))).toEqual(
-      readFileSync('tests/fixtures/native-standing-rgba.bin')
-    );
-  });
   it.each([1, 2, 3, 4, 5, 6, 7, 8])('square pencil/eraser size %i with fixed anchor', (size) => {
     const s = empty();
     s.pencilSize = size;
@@ -125,22 +119,6 @@ describe('ported Raster128 contract', () => {
     expect(s.color).toBe(0x12345603);
     expect(s.state).toBe(before);
     expect(s.past.length).toBe(history);
-  });
-  it('pixel templates and face assets are exclusive and keep collision rules', () => {
-    const s = empty();
-    new Stroke(s, { x: 3, y: 4 }, false).commit();
-    s.setSelection(new Set([key({ x: 3, y: 4 })]));
-    s.saveAsset('Test', false);
-    expect(s.templates).toHaveLength(1);
-    expect(s.faces).toHaveLength(0);
-    const face = s.saveAsset('Test', true)!;
-    s.saveAsset('Test', true);
-    expect(s.templates).toHaveLength(1);
-    expect(s.faces.map((f) => f.name)).toEqual(['Test', 'Test (2)']);
-    s.useFace(face);
-    s.useFace(s.faces[1]!);
-    expect(s.frame.layers.filter((l) => l.faceId)).toHaveLength(1);
-    expect(s.frame.layers.at(-1)!.pixels).toBe(s.faces[1]!.pixels);
   });
   it('frame duplication, session roundtrip and undo retain native pixels', () => {
     const s = empty();

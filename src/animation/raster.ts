@@ -1,9 +1,4 @@
 import { bytes, rgba } from './colors';
-import standing from './data/standing-neutral.json';
-import { nativePosePixels, poseForSource } from './nativePoses';
-import type { NativePoseReference } from './nativePoses';
-import type { FaceSlot, NativeFace } from './nativeFaces';
-import type { RasterRecipe } from './rasterOperations';
 
 export const SIZE = 128;
 export type Point = { x: number; y: number };
@@ -15,11 +10,8 @@ export type Layer = {
   visible: boolean;
   locked: boolean;
   pixels: Pixels;
-  faceId?: string;
-  nativeFaceSlot?: FaceSlot;
-  recipe?: RasterRecipe;
 };
-export type Frame = { layers: readonly Layer[]; duration: number; pose?: NativePoseReference; nativeFace?: NativeFace };
+export type Frame = { layers: readonly Layer[]; duration: number };
 export type PixelAsset = { id: string; name: string; pixels: Pixels; bounds: Rect };
 export type Reference = {
   name: string;
@@ -57,62 +49,11 @@ export function polygonMask(vertices: readonly Point[]): Set<number> {
     }
   return mask;
 }
-export function nativePose(): Pixels {
-  const pixels = new Map<number, number>();
-  for (const area of standing.areas) {
-    for (const k of polygonMask(area.points.map(([x, y]) => ({ x: x!, y: y! })))) pixels.set(k, area.color);
-  }
-  for (const [x, y, value] of standing.glints) pixels.set(y! * SIZE + x!, value!);
-  const result = new Map<number, number>();
-  for (const k of pixels.keys()) {
-    const { x, y } = point(k);
-    for (const [dx, dy] of [
-      [0, -1],
-      [-1, 0],
-      [1, 0],
-      [0, 1],
-    ])
-      if (contains(x + dx!, y + dy!)) result.set((y + dy!) * SIZE + x + dx!, standing.outline);
-  }
-  for (const [k, v] of pixels) result.set(k, v);
-  return result;
-}
-export function fixture(): Pixels {
-  const p = new Map([
-    [0, 0xff0000ff],
-    [127, 0x00ff00ff],
-    [16256, 0x0000ffff],
-    [16383, 0xffffffff],
-    [17 * SIZE + 13, 0xff00ffff],
-    [18 * SIZE + 13, 0x12345680],
-    [19 * SIZE + 13, 0xabcdef00],
-  ]);
-  for (let x = 24; x <= 80; x++) p.set(32 * SIZE + x, 0xffcc00ff);
-  for (let y = 24; y <= 80; y++) p.set(y * SIZE + 96, 0x00ffffff);
-  for (let y = 56; y < 72; y++) for (let x = 40; x < 64; x++) p.set(y * SIZE + x, 0x8844ccff);
-  return p;
-}
-export const SOURCES = {
-  empty: 'Leer / transparent',
-  'fino-standing-neutral-128': 'Stehend – neutral',
-  'fino-standing-active-128': 'Stehend – aktiv',
-  'fino-sitting-relaxed-128': 'Sitzend – entspannt',
-  'fino-sleeping-128': 'Schlafend',
-  'fino-reading-128': 'Lesend',
-  'fino-eating-128': 'Essend',
-  'dev-reference-128': 'Testfixture (128×128)',
-};
+export const SOURCES = { empty: 'Leer', transparent: 'Transparent' };
 export type SourceId = keyof typeof SOURCES;
 export function sourceLayers(source: SourceId): Layer[] {
-  if (source === 'empty') return [blankLayer('pixels-1')];
-  return [
-    {
-      ...blankLayer('native-pose', source === 'dev-reference-128' ? 'Testfixture' : 'Grundpose – Pixel'),
-      pixels: source === 'dev-reference-128' ? fixture() : nativePosePixels(poseForSource(source)!.id),
-      locked: source === 'dev-reference-128',
-    },
-    ...(source === 'dev-reference-128' ? [blankLayer('pixels-1')] : []),
-  ];
+  if (!Object.hasOwn(SOURCES, source)) throw Error('Unbekannter Ausgangszustand.');
+  return [blankLayer('pixels-1')];
 }
 /** Literal topmost RGBA, matching RasterDocument.sample; never alpha blended. */
 export function sample(layers: readonly Layer[], k: number): number {

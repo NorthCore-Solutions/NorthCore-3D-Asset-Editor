@@ -3,30 +3,13 @@ import { GlobalTemplateLibrary, applyGlobalTemplate, saveGlobalSelection, export
 import type { GlobalLibraryStorage } from '../src/animation/globalTemplateLibrary';
 import { emptyGlobalLibrary, parseGlobalLibrary } from '../src/animation/globalTemplateFormat';
 import type { GlobalTemplate } from '../src/animation/globalTemplateFormat';
-import { prepareLegacyTemplates, prepareArchivedLegacyTemplates, migrateLegacyTemplates } from '../src/animation/migration/legacyTemplates';
 import { AnimationStore } from '../src/animation/store';
 import { restoreSession, serializeSession } from '../src/animation/files';
 import { canonicalJson } from '../src/animation/contentHash';
 import { rectMask } from '../src/animation/raster';
-import { readFileSync } from 'node:fs';
-import inventory from '../src/animation/migration/legacy-inventory.json';
-import { prepareLocalLegacyMigration } from '../src/animation/migration/localMigration';
-import type { SessionStorage } from '../src/animation/storage';
 
 const platform = vi.hoisted(() => ({ save: vi.fn() }));
 vi.mock('../src/platform/nativeFileDialog', () => ({ saveBlobAs: platform.save }));
-
-it('native batch imports reject corrupt receipt hashes before changing the library', async () => {
-  const disk = memory(), lib = new GlobalTemplateLibrary(disk.persistence);
-  const plan = await prepareLegacyTemplates(legacy(), 'local');
-  await expect(lib.importTemplates(plan.entries.map((entry) => entry.template!), {
-    sourceKey: plan.sourceKey, sourceSha256: '0'.repeat(64), originalJson: plan.originalJson,
-    reportSha256: plan.reportSha256, route: 'exact', lossyApproved: false,
-  })).rejects.toThrow('Prüfsumme');
-  expect(lib.templates).toEqual([]);
-  expect(lib.dirty).toBe(false);
-  expect(disk.writes).toEqual([]);
-});
 function deferred<T>() { let resolve!: (v: T) => void; return { promise: new Promise<T>((r) => { resolve = r; }), resolve }; }
 const template = (id = 'native', name = 'Native'): GlobalTemplate => ({ id, name, width: 3, height: 2, origin: { x: 4, y: 5 }, pixels: [[1, 0x12345601]] });
 function memory(initial?: string) {
@@ -34,10 +17,6 @@ function memory(initial?: string) {
   const writes: string[] = [];
   const persistence: GlobalLibraryStorage = { read: vi.fn(() => Promise.resolve(json)), write: vi.fn((value: string) => { writes.push(value); json = value; return Promise.resolve(); }) };
   return { persistence, writes, get json() { return json; } };
-}
-function legacy(overrides: Record<string, unknown> = {}) {
-  return JSON.stringify({ version: 1, templates: [{ id: 'legacy', name: 'Legacy', width: 24, height: 16, originX: 16, originY: 24,
-    pixels: Array.from({ length: 64 }, (_, i) => ({ x: 8 + i % 8, y: Math.floor(i / 8), rgba: 0x12345601 })), ...overrides }] });
 }
 it('automatic writes are sequential, retain each immutable snapshot and stay pending until the latest completes', async () => {
   const gates = [deferred<void>(), deferred<void>(), deferred<void>()], writes: string[] = [];
@@ -120,16 +99,6 @@ it('applying a global template retains holes and padded borders with one normal 
   expect(store.selectionBounds()).toEqual({ x: 10, y: 20, width: 3, height: 2 }); expect(store.past).toHaveLength(before + 1);
   store.undo(); expect(store.layer!.pixels.size).toBe(0);
 });
-it('backup roundtrip preserves all native data, provenance, original JSON and receipts without changing document state', async () => {
-  const disk = memory(), lib = new GlobalTemplateLibrary(disk.persistence); await lib.load(); lib.add(template());
-  const plan = await prepareLegacyTemplates(legacy(), 'local'); await migrateLegacyTemplates(lib, plan);
-  const json = lib.exportJson(), restored = new GlobalTemplateLibrary(memory().persistence);
-  await importGlobalLibrary(restored, { text: () => Promise.resolve(json) }); await restored.settled();
-  expect(parseGlobalLibrary(restored.exportJson())).toEqual(parseGlobalLibrary(json));
-  platform.save.mockResolvedValueOnce(null); await exportGlobalLibrary(lib);
-  const [blob, name] = platform.save.mock.calls.at(-1)! as [Blob, string];
-  expect(await blob.text()).toBe(json); expect(name).toBe('Raster-Vorlagen.raster128-library.json'); expect(lib.dirty).toBe(false);
-});
 it.each(['{', JSON.stringify({ ...emptyGlobalLibrary(), version: 2 }), JSON.stringify({ ...emptyGlobalLibrary(), templates: [template(), template()] })])('invalid backup is rejected before mutation: %s', async (json) => {
   const lib = new GlobalTemplateLibrary(memory().persistence); await lib.load(); lib.add(template()); await lib.settled(); const before = lib.exportJson();
   await expect(lib.importJson(json)).rejects.toThrow(); expect(lib.exportJson()).toBe(before); expect(lib.dirty).toBe(false);
@@ -138,88 +107,6 @@ it('file read failure preserves the library; explicit empty backup during loadin
   const lib = new GlobalTemplateLibrary(memory(JSON.stringify({ ...emptyGlobalLibrary(), templates: [template()] })).persistence);
   await expect(importGlobalLibrary(lib, { text: () => Promise.reject(Error('Read failed')) })).rejects.toThrow('Read failed');
   await lib.importJson(JSON.stringify(emptyGlobalLibrary())); await lib.settled(); expect(lib.templates).toEqual([]); expect(lib.dirty).toBe(false);
-});
-it('exact Legacy conversion preserves spacing, native origin and exact low-alpha/transparent-RGB channels', async () => {
-  const raw = legacy({ pixels: Array.from({ length: 64 }, (_, i) => ({ x: 8 + i % 8, y: Math.floor(i / 8), rgba: 0x12345600 })) });
-  const plan = await prepareLegacyTemplates(raw, 'legacy-source');
-  expect(plan.route).toBe('exact'); expect(plan.originalJson).toBe(raw);
-  expect(plan.entries[0]!.template).toMatchObject({ width: 3, height: 2, origin: { x: 2, y: 3 }, pixels: [[1, 0x12345600]],
-    provenance: { originalOrigin: { x: 16, y: 24 }, originalSize: { width: 24, height: 16 }, sourceSha256: plan.sourceSha256 } });
-  expect(await prepareLegacyTemplates(raw, 'legacy-source')).toEqual(plan);
-});
-it('lossy conversion samples local 8×8 phase deterministically; origin rounding and partial blocks require approval', async () => {
-  const plan = await prepareLegacyTemplates(legacy({ originX: -3, width: 9, height: 1, pixels: [{ x: 0, y: 0, rgba: 0x12345601 }, { x: 8, y: 0, rgba: 0x87654321 }] }), 'legacy-source');
-  expect(plan.route).toBe('lossy'); expect(plan.entries[0]!.template).toMatchObject({ width: 2, height: 1, origin: { x: -1, y: 3 }, pixels: [[0, 0x12345601], [1, 0x87654321]] });
-  const disk = memory(), lib = new GlobalTemplateLibrary(disk.persistence);
-  await expect(migrateLegacyTemplates(lib, plan)).rejects.toThrow('Freigabe'); expect(disk.writes).toEqual([]);
-  await expect(migrateLegacyTemplates(lib, plan, { sourceSha256: plan.sourceSha256, reportSha256: '0'.repeat(64) })).rejects.toThrow('Freigabe');
-  await migrateLegacyTemplates(lib, plan, { sourceSha256: plan.sourceSha256, reportSha256: plan.reportSha256 }); expect(lib.templates).toHaveLength(1);
-});
-it.each([
-  { pixels: [{ x: 100, y: 0, rgba: 1 }] }, { future: true },
-  { pixels: [{ x: 0, y: 0, rgba: 1 }, { x: 0, y: 0, rgba: 2 }] }, { originX: 0.5 },
-])('invalid or ambiguous Legacy templates remain blocked: %o', async (overrides) => {
-  const plan = await prepareLegacyTemplates(legacy(overrides), 'legacy-source'), lib = new GlobalTemplateLibrary(memory().persistence);
-  expect(plan.route).toBe('blocked'); await expect(migrateLegacyTemplates(lib, plan)).rejects.toThrow('Blockierte'); expect(lib.templates).toEqual([]);
-});
-it('ID/name collisions preserve existing data; duplicate legacy IDs block rather than silently merge', async () => {
-  const lib = new GlobalTemplateLibrary(memory().persistence); await lib.load(); lib.add(template('legacy', 'Legacy')); await lib.settled();
-  const plan = await prepareLegacyTemplates(legacy(), 'legacy-source'); await migrateLegacyTemplates(lib, plan);
-  expect(lib.templates.map((t) => [t.id, t.name])).toEqual([['legacy', 'Legacy'], ['legacy (2)', 'Legacy (2)']]);
-  const raw = JSON.parse(legacy()) as { version: number; templates: unknown[] }; raw.templates.push(raw.templates[0]);
-  expect((await prepareLegacyTemplates(JSON.stringify(raw), 'legacy-source')).route).toBe('blocked');
-});
-it('repeated and concurrent migration uses a durable source receipt, even after deletion; changed source is new', async () => {
-  const disk = memory(), lib = new GlobalTemplateLibrary(disk.persistence), plan = await prepareLegacyTemplates(legacy(), 'local');
-  await Promise.all([migrateLegacyTemplates(lib, plan), migrateLegacyTemplates(lib, plan)]); expect(lib.templates).toHaveLength(1);
-  lib.remove(lib.templates[0]!.id); await lib.settled();
-  const reloaded = new GlobalTemplateLibrary(memory(disk.json).persistence);
-  expect(await migrateLegacyTemplates(reloaded, await prepareLegacyTemplates(legacy(), 'another-archive'))).toBe('existing'); expect(reloaded.templates).toEqual([]);
-  await migrateLegacyTemplates(reloaded, await prepareLegacyTemplates(legacy({ name: 'Changed' }), 'local')); expect(reloaded.templates).toHaveLength(1);
-});
-it('failed migration does not claim success; receipt retry persists once with retained approval', async () => {
-  let failed = true; const disk = memory();
-  const lib = new GlobalTemplateLibrary({ read: disk.persistence.read, write: async (json) => { if (failed) throw Error('Write failed'); await disk.persistence.write(json); } });
-  const plan = await prepareLegacyTemplates(legacy(), 'local');
-  await expect(migrateLegacyTemplates(lib, plan)).rejects.toThrow('Write failed'); expect(lib.dirty).toBe(true); expect(disk.json).toBeUndefined();
-  failed = false; expect(await migrateLegacyTemplates(lib, plan)).toBe('existing'); expect(lib.dirty).toBe(false); expect(lib.templates).toHaveLength(1);
-});
-it('modified review targets cannot bypass revalidation or approval', async () => {
-  const plan = await prepareLegacyTemplates(legacy(), 'local'); plan.entries[0]!.template!.pixels[0]![1] = 999;
-  const lib = new GlobalTemplateLibrary(memory().persistence);
-  await expect(migrateLegacyTemplates(lib, plan)).rejects.toThrow('Prüfbericht'); expect(lib.templates).toEqual([]);
-});
-it('corrupt original receipt checksum is rejected before replacing current global data', async () => {
-  const lib = new GlobalTemplateLibrary(memory().persistence); await migrateLegacyTemplates(lib, await prepareLegacyTemplates(legacy(), 'local'));
-  const before = lib.exportJson(), changed = parseGlobalLibrary(before); changed.migrations[0]!.originalJson += ' ';
-  await expect(lib.importJson(JSON.stringify(changed))).rejects.toThrow('Prüfsumme'); expect(lib.exportJson()).toBe(before);
-});
-it('lossy retry retains approval saved in the pending receipt, without allowing new unapproved sources', async () => {
-  const disk = memory(); let failed = true;
-  const lib = new GlobalTemplateLibrary({ read: disk.persistence.read, write: (json) => failed ? Promise.reject(Error('Write failed')) : disk.persistence.write(json) });
-  const plan = await prepareLegacyTemplates(legacy({ originX: -3 }), 'local');
-  await expect(migrateLegacyTemplates(lib, plan, { sourceSha256: plan.sourceSha256, reportSha256: plan.reportSha256 })).rejects.toThrow('Write failed');
-  failed = false; expect(await migrateLegacyTemplates(lib, plan)).toBe('existing'); expect(lib.dirty).toBe(false);
-  await expect(migrateLegacyTemplates(lib, await prepareLegacyTemplates(legacy({ originX: -5 }), 'local'))).rejects.toThrow('Freigabe');
-});
-it('a permanent step-6 archive supplies templates without changing that archive or the legacy library', async () => {
-  const key = 'archived.finoanim.json', original = legacy();
-  const definition = JSON.stringify({ version: 2, faceRigVersion: 2, id: 'archived', name: 'Archived', basePose: 'fino_standing_neutral.png',
-    frames: [{ durationMs: 1, ops: [], layers: [{ id: 'pixels', name: 'Pixels', kind: 'pixels', pixels: [] }] }] });
-  const entries = new Map([[key, definition], ['__legacy_templates', original]]);
-  const disk: SessionStorage = { run: (change) => Promise.resolve(change(entries)) };
-  const resources = new Map<string, string | Uint8Array>([
-    ...inventory.assets.map((asset) => [asset.path, new Uint8Array(readFileSync(asset.path))] as const),
-    [inventory.presets.path, readFileSync(inventory.presets.path, 'utf8')],
-  ]);
-  const saved = await (await prepareLocalLegacyMigration(key, undefined, resources, inventory, { storage: disk })).commit();
-  const snapshot = new Map(entries), plan = await prepareArchivedLegacyTemplates(saved.journal.archiveId, disk);
-  const lib = new GlobalTemplateLibrary(memory().persistence); await migrateLegacyTemplates(lib, plan);
-  expect(lib.templates[0]!.provenance!.archiveId).toBe(saved.journal.archiveId);
-  expect(entries).toEqual(snapshot); expect(plan.originalJson).toBe(original);
-});
-it('archive migration fails safely for missing archive, retaining the existing permanent-archive contract', async () => {
-  await expect(prepareArchivedLegacyTemplates('0'.repeat(64), { run: (change) => Promise.resolve(change(new Map())) })).rejects.toThrow('Originalarchiv fehlt');
 });
 it('export cancellation/failure never marks pending library data saved', async () => {
   const gate = deferred<void>(), lib = new GlobalTemplateLibrary({ read: () => Promise.resolve(undefined), write: () => gate.promise });

@@ -3,9 +3,6 @@ import type * as Store from '../../src/animation/store';
 import type * as Files from '../../src/animation/files';
 import type * as StorageModule from '../../src/animation/storage';
 import type * as Library from '../../src/animation/globalTemplateLibrary';
-import type * as Migration from '../../src/animation/migration/localMigration';
-import inventory from '../../src/animation/migration/legacy-inventory.json' with { type: 'json' };
-import { readFileSync } from 'node:fs';
 
 async function launch(page: Page, name: string, duration: number) {
   await page.goto('/'); await page.getByRole('button', { name: 'Animation Builder Fino zeichnen und animieren', exact: true }).click();
@@ -132,7 +129,7 @@ for (const fallback of ['storage', 'activation'] as const) test(`no BroadcastCha
 test('closing a tab with a real aborted transaction leaves no lock and no half-written record', async ({ page }) => {
   await launch(page, 'Survivor', 101); const other = await page.context().newPage(); await other.goto('/');
   await other.evaluate(() => new Promise<void>((resolve, reject) => {
-    const open = indexedDB.open('northcore-animation-builder', 2);
+    const open = indexedDB.open('northcore-animation-builder', 3);
     open.onerror = () => reject(open.error ?? Error('IndexedDB open failed'));
     open.onsuccess = () => {
       const tx = open.result.transaction('sessions', 'readwrite');
@@ -142,30 +139,4 @@ test('closing a tab with a real aborted transaction leaves no lock and no half-w
   })); await other.close();
   expect((await save(page)).result).toBe('saved');
   expect(await page.evaluate(async () => { const storagePath = '/src/animation/storage.ts'; const { localSessionStorage } = await import(storagePath) as typeof StorageModule; return (await localSessionStorage.read('Crash')).value; })).toBeUndefined();
-});
-
-test('real parallel migration journals preserve one target and immutable original archive across restart', async ({ page }) => {
-  test.setTimeout(90000); // Two complete compatibility audits/renders; correctness is asserted structurally.
-  const other = await page.context().newPage(); await Promise.all([page.goto('/'), other.goto('/')]);
-  const source = JSON.stringify({ version: 2, faceRigVersion: 2, id: 'shared-user', name: 'Shared migration', basePose: 'fino_standing_neutral.png',
-    frames: [{ durationMs: 37, ops: [], layers: [{ id: 'p', name: 'Pixels', kind: 'pixels', pixels: Array.from({ length: 64 }, (_, i) => ({ x: i % 8, y: Math.floor(i / 8), rgba: 0x12345601 })) }] }] });
-  const resources = [...inventory.assets.map((asset) => [asset.path, [...readFileSync(asset.path)]] as const), [inventory.presets.path, readFileSync(inventory.presets.path, 'utf8')] as const];
-  await page.evaluate(async (source) => { const storagePath = '/src/animation/storage.ts'; const storage = await import(storagePath) as typeof StorageModule; await storage.saveLocalSession('cross-tab.finoanim.json', source); }, source);
-  async function migrate(page: Page) { return page.evaluate(async ({ inventory, resources }) => {
-    const localMigrationPath = '/src/animation/migration/localMigration.ts'; const m = await import(localMigrationPath) as typeof Migration;
-    const data = new Map<string, string | Uint8Array>(resources.map(([path, value]) => [path, typeof value === 'string' ? value : new Uint8Array(value)]));
-    const plan = await m.prepareLocalLegacyMigration('cross-tab.finoanim.json', undefined, data, inventory);
-    try { const saved = await plan.commit(); return { id: saved.journal.id, status: saved.journal.status }; }
-    catch (error) { return { id: plan.id, status: error instanceof m.LocalMigrationError ? error.code : 'error' }; }
-  }, { inventory, resources }); }
-  const results = await Promise.all([migrate(page), migrate(other)]); expect(results.map((r) => r.id)[0]).toBe(results[1].id);
-  expect(results.some((r) => r.status === 'completed')).toBe(true); expect(results.every((r) => ['completed', 'superseded'].includes(r.status))).toBe(true);
-  await page.reload(); const result = await page.evaluate(async (id) => {
-    const localMigrationPath = '/src/animation/migration/localMigration.ts'; const m = await import(localMigrationPath) as typeof Migration;
-    const storagePath = '/src/animation/storage.ts'; const disk = await import(storagePath) as typeof StorageModule;
-    const saved = await m.readCompletedLocalMigration(id), archive = await m.readLocalMigrationArchive(saved.journal.archiveId), entries = await disk.localSessionStorage.query({ kind: 'raster' });
-    return { original: archive.archive.original.definition!.json, source: (await disk.localSessionStorage.read('cross-tab.finoanim.json')).value, completed: saved.journal.status,
-      targets: entries.items.filter((meta) => meta.key.endsWith('.raster128.json')).length, attempts: saved.journal.attempts };
-  }, results[0].id);
-  expect(result).toEqual({ original: source, source, completed: 'completed', targets: 1, attempts: 1 });
 });

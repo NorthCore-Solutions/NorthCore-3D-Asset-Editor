@@ -1,3 +1,4 @@
+import { EyedropperIcon } from './BuilderIcons';
 import type { ReactNode } from 'react';
 import { BuilderHeader, BuilderMenu, FitIcon, SelectionIcon, ToolGroup } from './BuilderUI';
 import { BrushSizeSelector } from './BrushSizeSelector';
@@ -5,7 +6,6 @@ import { animationStore as store } from './store';
 import type { Tool } from './store';
 import { SOURCES } from './raster';
 import type { SourceId } from './raster';
-import { poseForSource } from './nativePoses';
 import { builtinReference, REFERENCE_LABELS } from './files';
 import { help } from './help';
 import type { HelpTopic } from './help';
@@ -16,7 +16,7 @@ import type { useBuilderPanels } from './useBuilderPanels';
 const tools: [Tool, string, string][] = [
   ['pencil', '✎', 'Stift'],
   ['eraser', '⌫', 'Radierer'],
-  ['eyedropper', '⚗', 'Pipette'],
+  ['eyedropper', '', 'Pipette'],
   ['rect', '□', 'Rechteckauswahl'],
   ['polygon', '⬡', 'Polygonauswahl'],
   ['pan', '↔', 'Ansicht verschieben'],
@@ -54,7 +54,7 @@ export function BuilderCommands({ ui, documents, panels, mode, setMode, setTab, 
   const toolButton = ([tool, , label]: [Tool, string, string]) => (
     <span className="ab-tool" key={tool}>
       <button title={label} aria-label={label} aria-pressed={store.tool === tool} onClick={() => store.selectTool(tool)}>
-        {tool === 'rect' || tool === 'polygon' ? <SelectionIcon polygon={tool === 'polygon'} /> : label}
+        {tool === 'rect' || tool === 'polygon' ? <SelectionIcon polygon={tool === 'polygon'} /> : tool === 'eyedropper' ? <><EyedropperIcon />{label}</> : label}
       </button>
       {store.tool === tool && (tool === 'pencil' || tool === 'eraser') && <BrushSizeSelector value={store.brushSize} onChange={(size) => {
         if (tool === 'pencil') store.pencilSize = size;
@@ -119,7 +119,6 @@ export function BuilderCommands({ ui, documents, panels, mode, setMode, setTab, 
             store.playing ? store.pause() : store.play()
           )}
           {action('Frame hinzufügen', () => store.addFrame())}
-          {action('Frame aus Grundpose', () => store.addPoseFrame(), !poseForSource(store.state.source))}
           {action('Frame duplizieren', () => store.addFrame(true))}
         </>
       )}
@@ -194,13 +193,13 @@ export function BuilderCommands({ ui, documents, panels, mode, setMode, setTab, 
       </ToolGroup>
       <ToolGroup label="Zeichnen">{tools.slice(0, 3).map(toolButton)}</ToolGroup>
       <ToolGroup label="Auswahl / Greifen">{tools.slice(3).map(toolButton)}</ToolGroup>
-      <ToolGroup label="Wiedergabe / Grundpose">
+      <ToolGroup label="Wiedergabe / Ausgangszustand">
         <button title={store.playing ? 'Pause' : 'Abspielen'} onClick={() => (store.playing ? store.pause() : store.play())}>{store.playing ? 'Ⅱ' : '▶'}</button>
-      <select aria-label="Grundpose" title="Grundpose auf den aktuellen Frame anwenden" value={store.state.source} onChange={(e) => {
+      <select aria-label="Ausgangszustand" title="Neutraler Ausgangszustand" value={store.state.source} onChange={(e) => {
         try { store.source(e.target.value as SourceId); } catch (error) { setMessage(String(error)); }
       }}>
         {Object.entries(SOURCES).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
-      </select>{infoButton('Grundpose')}
+      </select>{infoButton('Ausgangszustand')}
       </ToolGroup>
       <ToolGroup label="Zoom">
         <button title="Herauszoomen" onClick={() => zoom(0.8)}>−</button>

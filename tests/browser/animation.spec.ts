@@ -31,7 +31,6 @@ async function state(page: Page) {
       pixels: [...(s.layer?.pixels ?? [])],
       frames: s.state.frames.length,
       templates: s.templates.length,
-      faces: s.faces.length,
       color: s.color,
       pencil: s.pencilSize,
       eraser: s.eraserSize,
@@ -54,77 +53,29 @@ async function menu(page: Page, label: string, action: string) {
   await page.locator('.ab-menu[open]').getByText(action, { exact: true }).click();
 }
 
-test('native mouse strokes, history, sizes, exact picker, exclusive face/template, dialogs and editor return', async ({
-  page,
-}) => {
-  const errors: string[] = [];
-  page.on('pageerror', (e) => errors.push(e.message));
+test('desktop raster painting, selection move/stretch, picker, frames and history remain native', async ({ page }) => {
   await launch(page);
-  await page.getByLabel('Grundpose', { exact: true }).selectOption('empty');
   await page.getByRole('button', { name: 'Stift', exact: true }).click();
-  await page.getByRole('button', { name: 'Werkzeuggröße', exact: true }).click();
-  await page.getByRole('option', { name: '4×4', exact: true }).click();
-  const a = await cell(page, 52, 38),
-    b = await cell(page, 76, 45),
-    before = await state(page);
-  await page.mouse.move(a.x, a.y);
-  await page.mouse.down();
-  await page.mouse.move(b.x, b.y, { steps: 2 });
-  expect((await state(page)).commits).toBe(before.commits);
-  await page.mouse.up();
-  const painted = await state(page);
-  expect(painted.commits).toBe(before.commits + 1);
-  expect(painted.pixels.length).toBeGreaterThan(80);
-  await page.getByTitle('Rückgängig', { exact: true }).click();
-  expect((await state(page)).pixels).toHaveLength(0);
-  await page.getByTitle('Wiederholen', { exact: true }).click();
-  expect((await state(page)).pixels).toEqual(painted.pixels);
-  await page.getByRole('button', { name: 'Radierer', exact: true }).click();
-  await page.getByRole('button', { name: 'Werkzeuggröße', exact: true }).click();
-  await page.getByRole('option', { name: '2×2', exact: true }).click();
-  await page.mouse.click(a.x, a.y);
-  expect((await state(page)).pixels.length).toBe(painted.pixels.length - 4);
-  await page.getByRole('button', { name: 'Stift', exact: true }).click();
-  await expect(page.getByLabel('Werkzeuggröße')).toHaveText('4×4 ▾');
-  await page.getByTitle('Pipette aktivieren').click();
-  await page.mouse.click(b.x, b.y);
-  expect((await state(page)).color).toBe(0xff3366ff);
+  const start = await cell(page, 20, 20), end = await cell(page, 23, 20);
+  await page.mouse.move(start.x, start.y); await page.mouse.down(); await page.mouse.move(end.x, end.y); await page.mouse.up();
+  expect((await state(page)).pixels).toHaveLength(4);
+  await page.getByRole('button', { name: 'Pipette', exact: true }).click();
+  await page.mouse.click(start.x, start.y);
+  await expect(page.getByRole('button', { name: 'Stift', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Rechteckauswahl', exact: true }).click();
-  const p = await cell(page, 46, 32),
-    q = await cell(page, 82, 50);
-  await page.mouse.move(p.x, p.y);
-  await page.mouse.down();
-  await page.mouse.move(q.x, q.y);
-  await page.mouse.up();
-  await menu(page, 'Vorlagen', 'Auswahl als Vorlage speichern …');
-  await page.getByLabel('Vorlagen-Name').fill('Augen');
-  await page.getByLabel('Als Gesichts-Asset speichern').check();
-  await page.getByLabel('Vorlagen-Name').press('Enter');
-  expect((await state(page)).faces).toBe(1);
-  expect((await state(page)).templates).toBe(0);
-  await menu(page, 'Vorlagen', 'Auswahl als Vorlage speichern …');
-  await page.getByLabel('Vorlagen-Name').fill('Pinselspur');
-  await page.getByLabel('Vorlagen-Name').press('Enter');
-  expect((await state(page)).templates).toBe(1);
-  await page.getByTitle('Farbe auswählen', { exact: true }).click();
-  await page.getByRole('dialog').getByLabel('RGBA Hex').fill('#12345601');
-  await page.getByRole('dialog').getByLabel('RGBA Hex').press('Enter');
-  expect((await state(page)).color).toBe(0x12345601);
-  await page.locator('.ab-toolbar').getByTitle('Neue Animation', { exact: true }).click();
-  await page.getByRole('dialog').getByLabel('Name', { exact: true }).fill('Abbrechen');
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('dialog')).toHaveCount(0);
-  expect((await state(page)).pixels).not.toHaveLength(0);
-  await returnToLauncher(page);
-  await page.getByRole('dialog').getByRole('button', { name: 'Zur Auswahl', exact: true }).click();
-  await page
-    .getByRole('button', {
-      name: 'Animation Builder Fino zeichnen und animieren',
-    })
-    .click();
-  expect((await state(page)).faces).toBe(1);
-  expect((await state(page)).templates).toBe(1);
-  expect(errors).toEqual([]);
+  const a = await cell(page, 19, 19), b = await cell(page, 25, 22);
+  await page.mouse.move(a.x, a.y); await page.mouse.down(); await page.mouse.move(b.x, b.y); await page.mouse.up();
+  const form = page.locator('form').filter({ has: page.getByLabel('Transformation', { exact: true }) });
+  await form.getByLabel('X', { exact: true }).fill('1'); await form.getByLabel('Y', { exact: true }).fill('0');
+  await form.getByRole('button', { name: 'Anwenden', exact: true }).click();
+  expect((await state(page)).pixels.map(([key]) => key)).toEqual([2581, 2582, 2583, 2584]);
+  await form.getByLabel('Transformation').selectOption('stretch');
+  await form.getByLabel('Y', { exact: true }).fill('1');
+  await form.getByRole('button', { name: 'Anwenden', exact: true }).click();
+  expect((await state(page)).pixels).toHaveLength(10);
+  await page.getByTitle('Rückgängig', { exact: true }).click(); expect((await state(page)).pixels).toHaveLength(4);
+  await page.getByTitle('Wiederholen', { exact: true }).click(); expect((await state(page)).pixels).toHaveLength(10);
+  await page.getByTitle('Frame duplizieren', { exact: true }).click(); expect((await state(page)).frames).toBe(2);
 });
 
 test('editor hamburger menu opens and closes on Raster128', async ({
@@ -193,7 +144,7 @@ test('tablet touch drawing, pinch cancels stroke, panels keep canvas geometry', 
   });
   const page = await context.newPage();
   await launch(page);
-  await page.getByLabel('Grundpose', { exact: true }).selectOption('empty');
+  await page.getByLabel('Ausgangszustand', { exact: true }).selectOption('empty');
   await page.getByRole('button', { name: 'Stift', exact: true }).click();
   const p = await cell(page, 60, 60);
   await page.touchscreen.tap(p.x, p.y);
@@ -231,7 +182,7 @@ test('reference only moves with Grab, undo restores it, brush popup scrolls with
   page,
 }) => {
   await launch(page);
-  await page.getByLabel('Grundpose', { exact: true }).selectOption('empty');
+  await page.getByLabel('Ausgangszustand', { exact: true }).selectOption('empty');
   await menu(page, 'Vorlagen', 'Stehend – neutral');
   await expect.poll(async () => (await state(page)).reference !== null).toBe(true);
   await page.getByRole('button', { name: /Referenz · nur Editor/ }).click();

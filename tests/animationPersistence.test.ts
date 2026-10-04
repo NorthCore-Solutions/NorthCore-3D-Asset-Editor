@@ -1,8 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { AnimationStore, Stroke } from '../src/animation/store';
 import { Viewport } from '../src/animation/raster';
-import { newRasterOperation } from '../src/animation/rasterOperations';
-import { exportPng, importRasterDocument, parseRasterDocument, restoreSession, saveRasterSession, serializeSession } from '../src/animation/files';
+import { exportPng, importRasterDocument, restoreSession, saveRasterSession, serializeSession } from '../src/animation/files';
 
 vi.mock('../src/platform/nativeFileDialog', () => ({ saveBlobAs: vi.fn().mockResolvedValue({ name: 'export.png', uri: null }) }));
 
@@ -67,53 +66,32 @@ async function pending() {
   return { task, tx: transactions[0]! };
 }
 
-it('native face changes during an asynchronous save stay dirty, unchanged face saves become clean', async () => {
-  store.source('fino-standing-neutral-128'); store.beginFacePreview(); store.commitFacePreview();
-  const first = await pending(); const savedJson = first.tx.json;
-  store.beginFacePreview(); store.previewFaceSlot('mouth', { variant: 'open' }); store.commitFacePreview();
-  first.tx.oncomplete(); expect(await first.task).toBe('changed'); expect(store.dirty).toBe(true);
-  expect(parseRasterDocument(savedJson!).state.frames[0]!.nativeFace!.slots.mouth.variant).toBe('neutral');
-  transactions.length = 0; const next = await pending(); next.tx.oncomplete();
-  expect(await next.task).toBe('saved'); expect(store.dirty).toBe(false);
-});
-it('recipe-only changes during save stay dirty; unchanged recipes and UI selection save clean', async () => {
-  const a = newRasterOperation({ type: 'moveRegion', rect: { x: 2, y: 3, width: 1, height: 1 }, dx: 0, dy: 0 });
-  store.applyNativeOperation(a, true);
-  const first = await pending();
-  const b = newRasterOperation({ type: 'moveRegion', rect: { x: 2, y: 3, width: 1, height: 1 }, dx: 0, dy: 0 });
-  store.applyNativeOperation(b, true); first.tx.oncomplete();
-  expect(await first.task).toBe('changed'); expect(store.dirty).toBe(true);
-  expect(parseRasterDocument(first.tx.json!).state.frames[0]!.layers[0]!.recipe!.operations).toHaveLength(1);
-  transactions.length = 0; const next = await pending(); store.setSelection(new Set([0])); store.selectTool('pencil');
-  next.tx.oncomplete(); expect(await next.task).toBe('saved'); expect(store.dirty).toBe(false);
-});
-
-it.each([false, true])('creating a template/face (face=%s) is dirty without a history entry', (face) => {
+it.each([false])('creating a template/face (face=%s) is dirty without a history entry', () => {
   const past = store.past.length;
   expect(store.dirty).toBe(false);
-  expect(store.saveAsset('Asset', face)).not.toBeNull();
+  expect(store.saveAsset('Asset')).not.toBeNull();
   expect(store.dirty).toBe(true);
   expect(store.past).toHaveLength(past);
 });
 
-it.each([false, true])('renaming/deleting collections is dirty outside frame history (face=%s)', (face) => {
-  const asset = store.saveAsset('Asset', face)!;
+it.each([false])('renaming/deleting collections is dirty outside frame history (face=%s)', () => {
+  const asset = store.saveAsset('Asset')!;
   store.markSaved(store.captureContent());
   const past = store.past.length;
-  store.renameAsset(asset.id, 'Renamed', face);
+  store.renameAsset(asset.id, 'Renamed');
   expect(store.dirty).toBe(true);
-  expect((face ? store.faces : store.templates)[0]!.name).toBe('Renamed');
+  expect((store.templates)[0]!.name).toBe('Renamed');
   store.markSaved(store.captureContent());
-  store.deleteAsset(asset.id, face);
+  store.deleteAsset(asset.id);
   expect(store.dirty).toBe(true);
-  expect(face ? store.faces : store.templates).toHaveLength(0);
+  expect(store.templates).toHaveLength(0);
   expect(store.past).toHaveLength(past);
 });
 
 it.each(['frames', 'name', 'source', 'reference'] as const)('document %s changes are dirty', (kind) => {
   if (kind === 'frames') store.duration(250);
   if (kind === 'name') store.commit({ ...store.state, name: 'Renamed animation' });
-  if (kind === 'source') store.source('dev-reference-128');
+  if (kind === 'source') store.source('transparent');
   if (kind === 'reference') store.setReference({ name: 'Reference', width: 1, height: 1,
     rgba: new Uint8Array([1, 2, 3, 255]), bounds: { x: 0, y: 0, width: 1, height: 1 }, aligned: true, visible: true });
   expect(store.dirty).toBe(true);
@@ -129,13 +107,13 @@ it('unchanged completed save marks the written content clean', async () => {
   expect(store.dirty).toBe(false);
 });
 
-it.each(['document', 'template', 'face', 'metadata'] as const)('%s changes during a save stay dirty', async (kind) => {
+it.each(['document', 'template', 'metadata'] as const)('%s changes during a save stay dirty', async (kind) => {
   store.duration(250);
   const { task, tx } = await pending();
   const written = tx.json!;
   if (kind === 'document') store.duration(300);
   else if (kind === 'metadata') store.setDocumentMetadata({ ...store.state.metadata, reactionState: 'happy' });
-  else store.saveAsset('Created during write', kind === 'face');
+  else store.saveAsset('Created during write');
   tx.oncomplete();
   expect(await task).toBe('changed');
   expect(store.dirty).toBe(true);
@@ -143,7 +121,6 @@ it.each(['document', 'template', 'face', 'metadata'] as const)('%s changes durin
   restoreSession(restored, written);
   expect(restored.frame.duration).toBe(250);
   expect(restored.templates).toHaveLength(0);
-  expect(restored.faces).toHaveLength(0);
   expect(restored.state.metadata.reactionState).toBeUndefined();
 });
 
@@ -156,7 +133,7 @@ it('unchanged metadata save becomes clean and its immutable baseline survives ca
   expect(await task).toBe('saved');
   expect(store.state.metadata.reactionState).toBe('happy');
   expect(store.dirty).toBe(false);
-  expect(openDatabase).toHaveBeenCalledWith('northcore-animation-builder', 2);
+  expect(openDatabase).toHaveBeenCalledWith('northcore-animation-builder', 3);
 });
 
 it('a new document gets a fresh identity and ignores an old save completion', async () => {
@@ -185,14 +162,13 @@ it.each(['onerror', 'onabort'] as const)('%s does not mark saved and releases th
 });
 
 it('restore replaces document and collections and establishes the clean baseline', () => {
-  store.saveAsset('Template', false); store.saveAsset('Face', true);
+  store.saveAsset('Template');
   store.duration(250);
   const json = serializeSession(store);
   store.deleteAsset(store.templates[0]!.id);
   restoreSession(store, json);
   expect(store.frame.duration).toBe(250);
   expect(store.templates.map((a) => a.name)).toEqual(['Template']);
-  expect(store.faces.map((a) => a.name)).toEqual(['Face']);
   expect(store.dirty).toBe(false);
   expect(store.past).toHaveLength(0);
   expect(store.future).toHaveLength(0);
@@ -205,7 +181,7 @@ it.each(['success', 'failure'] as const)('restore during a save ignores its stal
   store.duration(250);
   const { task, tx } = await pending();
   restoreSession(store, json);
-  store.saveAsset('New session collection', false);
+  store.saveAsset('New session collection');
   if (outcome === 'success') tx.oncomplete();
   else { tx.error = new Error('Old session failure'); tx.onerror(); }
   expect(await task).toBe('stale');
@@ -215,15 +191,15 @@ it.each(['success', 'failure'] as const)('restore during a save ignores its stal
 
 it('undo/redo leave unsaved collections intact and dirty', () => {
   store.duration(250);
-  store.saveAsset('Unsaved template', false); store.saveAsset('Unsaved face', true);
-  const collections = [store.templates, store.faces];
+  store.saveAsset('Unsaved template');
+  const collections = [store.templates];
   store.undo();
   expect(store.frame.duration).toBe(400);
   expect(store.dirty).toBe(true);
   store.redo();
   expect(store.frame.duration).toBe(250);
   expect(store.dirty).toBe(true);
-  expect([store.templates, store.faces]).toEqual(collections);
+  expect([store.templates]).toEqual(collections);
 });
 
 it('undo to the saved document is clean and redo is dirty', () => {
@@ -263,7 +239,7 @@ it('parallel saves are ignored and subsequent saves write the newer version', as
 });
 
 it('PNG export does not mark a session saved', async () => {
-  store.saveAsset('Unsaved', false);
+  store.saveAsset('Unsaved');
   await exportPng(store.frame, store.state.name);
   expect(store.dirty).toBe(true);
 });

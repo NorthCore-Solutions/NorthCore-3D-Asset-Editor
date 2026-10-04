@@ -1,3 +1,4 @@
+import { LockIcon, EyedropperIcon } from './BuilderIcons';
 import type { ReactNode } from 'react';
 import { BuilderPanel, InspectorSection } from './BuilderUI';
 import { number } from './builderForm';
@@ -5,8 +6,6 @@ import type { HelpTopic } from './help';
 import { animationStore as store } from './store';
 import { capture } from './raster';
 import { hex } from './colors';
-import { NativeFaceInspector } from './NativeFaceInspector';
-import { RasterOperationsInspector } from './RasterOperationsInspector';
 import type { BuilderDialogs } from './useBuilderDialogs';
 
 export function BuilderInspector({ open: right, onToggle, mode, ui }: {
@@ -21,8 +20,6 @@ export function BuilderInspector({ open: right, onToggle, mode, ui }: {
   const current = store.layer;
   return (
     <BuilderPanel side="right" title="Inspektor" open={right} onToggle={onToggle}>
-      <NativeFaceInspector store={store} />
-      <RasterOperationsInspector store={store} />
         {mode !== 'Animation' &&
           group(
             'Layer',
@@ -73,7 +70,7 @@ export function BuilderInspector({ open: right, onToggle, mode, ui }: {
                     title="Sperren"
                     onClick={() => store.editLayer(l.id, { locked: !l.locked })}
                   >
-                    {l.locked ? '🔒' : '♧'}
+                    <LockIcon locked={l.locked} />
                   </button>
                   <button onClick={() => store.selectLayer(l.id)}>
                     {l.name}
@@ -113,7 +110,7 @@ export function BuilderInspector({ open: right, onToggle, mode, ui }: {
                   onClick={() => setColorOpen(true)}
                 />
                 <button title="Pipette aktivieren" onClick={() => store.selectTool('eyedropper')}>
-                  ⚗
+                  <EyedropperIcon />
                 </button>
                 <label>
                   RGBA Hex
@@ -160,23 +157,6 @@ export function BuilderInspector({ open: right, onToggle, mode, ui }: {
               </label>
               <button type="submit">Übernehmen</button>
             </form>
-          )}
-        {mode !== 'Pixel' &&
-          group(
-            'Gesicht',
-            <>
-              {!store.faces.length && <p>Noch keine nativen Gesichts-Assets</p>}
-              {store.faces.map((a) => (
-                <button
-                  className="ab-library-row"
-                  key={a.id}
-                  aria-pressed={store.frame.layers.some((l) => l.faceId === a.id)}
-                  onClick={() => store.useFace(a)}
-                >
-                  {a.name}
-                </button>
-              ))}
-            </>
           )}
         {mode !== 'Animation' &&
           group(

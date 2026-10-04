@@ -117,12 +117,12 @@ it('global libraries preserve local templates on conflict, reject blind retries 
   await first.reload(); expect(first.templates[0]!.id).toBe('B'); expect(first.externalChanged).toBe(false);
 });
 
-it('explicit document overwrite cannot modify internal archives, Legacy originals or published migration targets', async () => {
+it('local document names cannot overwrite reserved internal storage', async () => {
   const disk = new Memory(), a = client(disk);
-  for (const key of ['__migration_v1:archive:original', 'original.finoanim.json', 'Raster-Migration original.raster128.json']) {
-    await a.run((entries) => entries.set(key, 'original bytes'));
+  for (const key of ['__raster128_global_templates_v1', '__builder_revision_v1:original']) {
+    disk.rows.set(key, 'original bytes');
     const store = new AnimationStore(); store.newAnimation(key, 'empty', false);
-    await expect(saveRasterSession(store, { storage: a, expected: await a.read(key) })).rejects.toThrow('Original-/Migrationsdaten');
+    await expect(saveRasterSession(store, { storage: a, expected: await a.read(key) })).rejects.toThrow('Reservierter Speicherkey.');
     expect((await a.read(key)).value).toBe('original bytes'); expect(store.dirty).toBe(true);
   }
 });

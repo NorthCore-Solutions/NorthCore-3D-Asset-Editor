@@ -4,13 +4,14 @@ import type { SessionStorage } from './storage';
 
 const DB = 'northcore-animation-builder';
 const CATALOG = 'builder_metadata';
-/** V2 adds only a rebuildable catalog; existing payloads and revision sidecars stay byte-identical. */
+/** V3 removes retired records and rebuilds native indexes; Raster128 document bytes stay unchanged. */
 async function database(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB, 2); let abandoned = false;
+    const request = indexedDB.open(DB, 3); let abandoned = false;
     request.onupgradeneeded = () => {
       const db = request.result, tx = request.transaction!;
       if (!db.objectStoreNames.contains('sessions')) db.createObjectStore('sessions');
+      if (db.objectStoreNames.contains(CATALOG)) db.deleteObjectStore(CATALOG);
       const catalog = db.createObjectStore(CATALOG, { keyPath: 'key' });
       catalog.createIndex('kind', ['kind', 'key']);
       for (const field of CATALOG_INDEXES) catalog.createIndex(field, ['kind', field, 'key']);
@@ -18,13 +19,11 @@ async function database(): Promise<IDBDatabase> {
       cursor.onsuccess = () => {
         const row = cursor.result; if (!row) return;
         if (typeof row.key === 'string') {
-          const meta = metadataKey(row.key);
-          if (meta?.kind === 'journal') {
-            // Only small journals are read during upgrade. Archive/blob/document bytes are untouched.
-            const read = sessions.get(row.key);
-            read.onsuccess = () => { catalog.put(typeof read.result === 'string' ? summarizeStorage(meta.key, read.result) : meta); row.continue(); };
-            return;
+          const candidate = row.key.startsWith('__builder_revision_v1:') ? row.key.slice('__builder_revision_v1:'.length) : row.key;
+          if (candidate.startsWith('__migration_v1:') || candidate === '__legacy_templates' || candidate.endsWith('.finoanim.json')) {
+            sessions.delete(row.key); row.continue(); return;
           }
+          const meta = metadataKey(row.key);
           if (meta) catalog.put(meta);
         }
         row.continue();
@@ -86,7 +85,7 @@ export const indexedSessionStorage: SessionStorage = {
   has(key) {
     return transact(['sessions'], 'readonly', (tx, done) => { const read = tx.objectStore('sessions').getKey(key); read.onsuccess = () => done(read.result !== undefined); });
   },
-  async run<T>(change: (entries: Map<string, string>) => T, keys?: readonly string[], documentId?: string, prepared?: ReadonlyMap<string, StorageMetadata | undefined>): Promise<T> {
+  async run<T>(change: (entries: Map<string, string>) => T, keys?: readonly string[], prepared?: ReadonlyMap<string, StorageMetadata | undefined>): Promise<T> {
     if (!keys) throw Error('Speichertransaktion benötigt explizite Keys.');
     return transact(['sessions', CATALOG], 'readwrite', (tx, done) => {
       const catalog = tx.objectStore(CATALOG);
@@ -101,21 +100,12 @@ export const indexedSessionStorage: SessionStorage = {
         }
         done(result);
       });
-      if (!documentId) { perform(); return; }
-      const unknown = catalog.index('detailsKnown').count(IDBKeyRange.bound(['raster', 0, ''], ['raster', 0, []]));
-      unknown.onsuccess = () => guarded(tx, () => {
-        if (unknown.result) throw Error('Dokument-ID-Katalog muss vor der Migration vervollständigt werden.');
-        const collision = catalog.index('targetId').getKey(IDBKeyRange.bound(['raster', documentId, ''], ['raster', documentId, []]));
-        collision.onsuccess = () => guarded(tx, () => {
-          if (collision.result !== undefined) { const error = Error('Dokument-ID gehört bereits einer anderen Sitzung.'); error.name = 'StorageIdentityCollision'; throw error; }
-          perform();
-        });
-      });
+      perform();
     });
   },
   query(query: StorageQuery): Promise<StoragePage> {
     return transact([CATALOG], 'readonly', (tx, done) => {
-      const field = (['sourceIdentitySha256', 'archiveId', 'targetId', 'sourceSha256', 'sourceKey', 'status', 'detailsKnown'] as const).find((field) => query[field] !== undefined);
+      const field = CATALOG_INDEXES.find((field) => query[field] !== undefined);
       const prefix: IDBValidKey[] = field ? [query.kind, query[field]!] : [query.kind];
       const range = IDBKeyRange.bound([...prefix, query.after ?? ''], [...prefix, []], query.after !== undefined);
       const cursor = tx.objectStore(CATALOG).index(field ?? 'kind').openCursor(range), limit = pageLimit(query);

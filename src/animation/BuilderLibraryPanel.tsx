@@ -1,14 +1,14 @@
-import type { ReactNode } from 'react';
+import { ProjectLibrary } from './ProjectLibrary';
 import { BuilderPanel, LibraryTabs } from './BuilderUI';
 import { animationStore as store } from './store';
 import { globalTemplateLibrary as library, saveGlobalSelection, applyGlobalTemplate, exportGlobalLibrary, importGlobalLibrary } from './globalTemplateLibrary';
 import type { BuilderDialogs } from './useBuilderDialogs';
 import type { RasterDocumentActions } from './useRasterDocumentActions';
 
-export function BuilderLibraryPanel({ open: left, onToggle, tab, setTab, ui, documents, migrationPanel, legacyTemplateImport }: {
+export function BuilderLibraryPanel({ open: left, onToggle, tab, setTab, ui, documents }: {
   open: boolean; onToggle: () => void; tab: string; setTab: (tab: string) => void;
   ui: Pick<BuilderDialogs, 'infoButton' | 'rename' | 'insert' | 'saveTemplate' | 'report' | 'setMessage' | 'setModal'>;
-  documents: Pick<RasterDocumentActions, 'sessions' | 'nextSession' | 'moreSessions' | 'newAnimation' | 'saveLocal' | 'load'>; migrationPanel: ReactNode; legacyTemplateImport: ReactNode;
+  documents: Pick<RasterDocumentActions, 'sessions' | 'nextSession' | 'moreSessions' | 'newAnimation' | 'saveLocal' | 'load'>;
 }) {
   const { infoButton, rename, insert, saveTemplate, report, setMessage } = ui;
   const { sessions, nextSession, moreSessions, newAnimation, saveLocal, load } = documents;
@@ -17,6 +17,7 @@ export function BuilderLibraryPanel({ open: left, onToggle, tab, setTab, ui, doc
         <LibraryTabs value={tab} onChange={setTab}>
         {tab === 'Dateien' ? (
           <>
+            <ProjectLibrary ui={ui} />
             <div className="ab-library-actions">
               <button onClick={newAnimation}>＋ Neue Animation</button>
               <button onClick={() => saveLocal()}>Sitzung lokal sichern</button>
@@ -29,7 +30,6 @@ export function BuilderLibraryPanel({ open: left, onToggle, tab, setTab, ui, doc
                 </button>
               ))}
             {nextSession && <button onClick={moreSessions}>Weitere Raster-Dokumente laden</button>}
-            {migrationPanel}
             <p>Die aktuelle Sitzung bleibt beim Editorwechsel erhalten.</p>
           </>
         ) : (
@@ -55,7 +55,6 @@ export function BuilderLibraryPanel({ open: left, onToggle, tab, setTab, ui, doc
               })}>Auswahl global speichern …</button>
               <button onClick={() => report(exportGlobalLibrary())}>Bibliothek exportieren …</button>
               <button onClick={() => document.querySelector<HTMLInputElement>('#ab-library-file')?.click()}>Bibliothek importieren …</button>
-              {legacyTemplateImport}
             </div>
             {library.templates.map((template) => <div className="ab-library-row" key={template.id}>
               <button onClick={() => insert({ name: template.name, bounds: { ...template.origin, width: template.width, height: template.height } },

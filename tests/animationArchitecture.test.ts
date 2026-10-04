@@ -45,20 +45,18 @@ function reachable(path: string, seen = new Set<string>()): Set<string> {
   return seen;
 }
 
-it('native authoring and shared infrastructure cannot load Legacy compatibility', () => {
-  const native = ['store', 'raster', 'files', 'nativePoses', 'nativeFaces', 'rasterOperations', 'globalTemplateLibrary', 'globalTemplateFormat',
-    'RasterCanvas', 'NativeFaceInspector', 'RasterOperationsInspector', 'BuilderUI', 'Dialog', 'ColorDialog', 'BrushSizeSelector', 'useBuilderPanels', 'help', 'builderForm', 'BuilderCommands', 'BuilderLibraryPanel', 'BuilderInspector', 'BuilderTimeline',
+it('native authoring has no removed specialized dependencies', () => {
+  const native = ['store', 'raster', 'files', 'ProjectLibrary', 'projectDirectory', 'BuilderIcons', 'globalTemplateLibrary', 'globalTemplateFormat',
+    'RasterCanvas', 'BuilderUI', 'Dialog', 'ColorDialog', 'BrushSizeSelector', 'useBuilderPanels', 'help', 'builderForm', 'BuilderCommands', 'BuilderLibraryPanel', 'BuilderInspector', 'BuilderTimeline',
     'useBuilderDialogs', 'useRasterDocumentActions', 'useBuilderShortcuts'];
   for (const entry of native) {
     const path = ['ts', 'tsx'].map((extension) => resolve(`src/animation/${entry}.${extension}`)).find((candidate) => existsSync(candidate))!;
     expect(existsSync(path), entry).toBe(true);
-    for (const dependency of reachable(path)) expect(name(dependency), entry).not.toMatch(/\/migration\/|\/legacy\.ts$|\/templateLibrary\.ts$/);
+    for (const dependency of reachable(path)) expect(name(dependency), entry).not.toMatch(/\/migration\/|\/(?:legacy|nativeFaces|nativePoses|rasterOperations|templateLibrary)\.ts$/);
   }
   for (const dependency of reachable(resolve('src/animation/storage.ts'))) expect(name(dependency)).toMatch(/src\/animation\/(?:storage|indexedSessionStorage|storageCatalog)\.ts$/);
   for (const entry of ['storageCatalog', 'png', 'contentHash', 'colors']) expect(graph.get(resolve(`src/animation/${entry}.ts`)), entry).toEqual([]);
-  // The renderer may share PNG/RGBA primitives, but must not load native authoring.
-  for (const dependency of graph.get(resolve('src/animation/legacy.ts')) ?? [])
-    expect(name(dependency)).toMatch(/src\/animation\/(?:png|colors)\.ts$/);
+
 });
 
 it('the source runtime graph has no cycles', () => {
@@ -72,11 +70,9 @@ it('the source runtime graph has no cycles', () => {
   for (const path of files) visit(path, []);
 });
 
-it('animation modules are reachable or explicitly retained tested mapping APIs', () => {
+it('animation modules are reachable without retired systems', () => {
   const shipped = reachable(resolve('src/main.tsx'));
-  // Both pure mapping APIs remain required for compatibility, without automatic
-  // lossy adoption in the converter. Their isolated tests are deliberate callers.
-  const offline = ['src/animation/migration/legacyOperations.ts', 'src/animation/migration/legacyFaces.ts'];
+  const offline: string[] = [];
   for (const path of files.filter((p) => name(p).startsWith('src/animation/')))
     expect(shipped.has(path) || offline.includes(name(path)), name(path)).toBe(true);
   for (const [path, names] of exported) if (name(path).startsWith('src/animation/')) for (const exportedName of names)

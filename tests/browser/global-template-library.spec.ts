@@ -3,7 +3,6 @@ import { readFile } from 'node:fs/promises';
 import type * as Raster from '../../src/animation/store';
 import type * as Library from '../../src/animation/globalTemplateLibrary';
 import type * as Storage from '../../src/animation/storage';
-import type * as Files from '../../src/animation/storage';
 
 async function launch(page: Page) {
   await page.goto('/');
@@ -91,32 +90,6 @@ test('failed global writes are separate from document dirty, protect leaving and
   await page.getByRole('button', { name: 'Animation Builder Fino zeichnen und animieren', exact: true }).click();
   await page.getByRole('tab', { name: 'Vorlagen', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Pending global', exact: true })).toBeVisible();
-});
-test('manual Legacy review requires explicit Lossy approval, retains originals and is idempotent', async ({ page }) => {
-  await launch(page);
-  const raw = JSON.stringify({ version: 1, templates: [{ id: 'legacy-browser', name: 'Legacy browser', width: 9, height: 1,
-    originX: -3, originY: 24, pixels: [{ x: 0, y: 0, rgba: 0x12345601 }] }] }, null, 2) + '\r\n';
-  await page.evaluate(async (raw) => {
-    const path = '/src/animation/storage.ts'; const files = await import(path) as typeof Files;
-    await files.saveLocalSession('__legacy_templates', raw);
-  }, raw);
-  const review = async () => {
-    await page.getByRole('button', { name: 'Legacy-Vorlagen prüfen …', exact: true }).click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Prüfen', exact: true }).click();
-    await expect(page.getByRole('dialog')).toContainText('lossy');
-  };
-  await review(); await page.getByRole('dialog').getByRole('button', { name: 'Übernehmen', exact: true }).click();
-  await expect(page.getByRole('dialog')).toBeVisible(); await expect(page.getByRole('button', { name: 'Legacy browser', exact: true })).toHaveCount(0);
-  await page.getByRole('dialog').getByRole('checkbox').check();
-  await page.getByRole('dialog').getByRole('button', { name: 'Übernehmen', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Legacy browser', exact: true })).toBeVisible();
-  await expect(page.getByRole('status')).toContainText('Gespeichert');
-  await review(); await page.getByRole('dialog').getByRole('checkbox').check();
-  await page.getByRole('dialog').getByRole('button', { name: 'Übernehmen', exact: true }).click();
-  await expect(page.locator('.ab-status')).toContainText('bereits übernommen');
-  await expect(page.getByRole('button', { name: 'Legacy browser', exact: true })).toHaveCount(1);
-  const original = await page.evaluate(async () => { const path = '/src/animation/storage.ts'; return (await (await import(path) as typeof Files).localSessionStorage.read('__legacy_templates')).value; });
-  expect(original).toBe(raw); expect((await snapshot(page)).dirty).toBe(false);
 });
 
 test('a delayed global write result survives leaving and remounting without changing the document session', async ({ page }) => {

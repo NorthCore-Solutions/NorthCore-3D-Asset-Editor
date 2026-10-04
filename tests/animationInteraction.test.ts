@@ -4,23 +4,8 @@ import { crc32, deflateSync } from 'node:zlib';
 import { AnimationStore, Stroke } from '../src/animation/store';
 import { blankLayer, rectMask } from '../src/animation/raster';
 import { decodePng } from '../src/animation/png';
-import { decodeTemplates, encodeTemplates } from '../src/animation/templateLibrary';
 
 describe('migration interaction guarantees', () => {
-  it('source replacement retains user layers including pixels-1, fixture is paintable on its own layer', () => {
-    const s = new AnimationStore();
-    s.source('empty');
-    const stroke = new Stroke(s, { x: 2, y: 3 }, false);
-    stroke.commit();
-    const pixels = s.layer!.pixels;
-    s.source('fino-standing-neutral-128');
-    expect(s.frame.layers.find((l) => l.id === 'pixels-1')!.pixels).toBe(pixels);
-    s.source('dev-reference-128');
-    expect(s.frame.layers.filter((l) => l.id === 'pixels-1')).toHaveLength(1);
-    expect(s.editable!.pixels).toBe(pixels);
-    s.newAnimation('Fixture', 'dev-reference-128', false);
-    expect(s.editable?.id).toBe('pixels-1');
-  });
   it('stale stroke cannot commit after frame switch or locking the target', () => {
     const s = new AnimationStore();
     const stroke = new Stroke(s, { x: 10, y: 10 }, false);
@@ -91,22 +76,6 @@ describe('migration interaction guarantees', () => {
       ],
     });
     expect([...decodePng(indexed).rgba]).toEqual([17, 28, 39, 1, 90, 80, 70, 0]);
-  });
-  it('legacy template library roundtrip uses the original Dart schema', () => {
-    const templates = [
-      {
-        id: 'eyes',
-        name: 'Augen',
-        origin: { x: 300, y: 200 },
-        width: 2,
-        height: 1,
-        pixels: [{ x: 1, y: 0, rgba: 0x12345601 }],
-      },
-    ];
-    const serialized = encodeTemplates(templates);
-    expect(serialized).toContain('"originX": 300');
-    expect(decodeTemplates(serialized)).toEqual(templates);
-    expect(() => decodeTemplates('{"version":1,"templates":[{"id":"broken"}]}')).toThrow();
   });
   it('layer visibility and topmost exact RGBA survive local history', () => {
     const s = new AnimationStore();
