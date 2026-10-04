@@ -1,4 +1,3 @@
-import { EyedropperIcon } from './BuilderIcons';
 import type { ReactNode } from 'react';
 import { BuilderHeader, BuilderMenu, FitIcon, SelectionIcon, ToolGroup } from './BuilderUI';
 import { BrushSizeSelector } from './BrushSizeSelector';
@@ -54,7 +53,7 @@ export function BuilderCommands({ ui, documents, panels, mode, setMode, setTab, 
   const toolButton = ([tool, , label]: [Tool, string, string]) => (
     <span className="ab-tool" key={tool}>
       <button title={label} aria-label={label} aria-pressed={store.tool === tool} onClick={() => store.selectTool(tool)}>
-        {tool === 'rect' || tool === 'polygon' ? <SelectionIcon polygon={tool === 'polygon'} /> : tool === 'eyedropper' ? <><EyedropperIcon />{label}</> : label}
+        {tool === 'rect' || tool === 'polygon' ? <SelectionIcon polygon={tool === 'polygon'} /> : label}
       </button>
       {store.tool === tool && (tool === 'pencil' || tool === 'eraser') && <BrushSizeSelector value={store.brushSize} onChange={(size) => {
         if (tool === 'pencil') store.pencilSize = size;

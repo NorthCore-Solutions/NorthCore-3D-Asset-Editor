@@ -7,6 +7,7 @@ export function LockIcon({ locked }: { locked: boolean }) {
 }
 export function EyedropperIcon() {
   return <svg className="ab-outline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="m14 5 5 5M16 7l3-3a2.1 2.1 0 0 1 3 3l-3 3M15 6 4 17v3h3L18 9M4 20l-2 2" />
+    <path d="m14 5 5 5M16 7l3-3a2.1 2.1 0 0 1 3 3l-3 3M15 6 7 14" />
+    <path d="m13 8 3 3M7 14l-3 4v3h3l4-3" />
   </svg>;
 }

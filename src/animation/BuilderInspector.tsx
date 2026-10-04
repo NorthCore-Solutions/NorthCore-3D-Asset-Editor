@@ -57,7 +57,7 @@ export function BuilderInspector({ open: right, onToggle, mode, ui }: {
               )}
               {[...store.frame.layers].reverse().map((l) => (
                 <div
-                  className={`ab-layer ${current === l && !store.referenceSelected ? 'selected' : ''}`}
+                  className={`ab-layer ab-layer-entry ${current === l && !store.referenceSelected ? 'selected' : ''}`}
                   key={l.id}
                 >
                   <button
@@ -109,7 +109,7 @@ export function BuilderInspector({ open: right, onToggle, mode, ui }: {
                   style={{ background: hex(store.color) }}
                   onClick={() => setColorOpen(true)}
                 />
-                <button title="Pipette aktivieren" onClick={() => store.selectTool('eyedropper')}>
+                <button className="ab-inspector-eyedropper" title="Pipette aktivieren" onClick={() => store.selectTool('eyedropper')}>
                   <EyedropperIcon />
                 </button>
                 <label>

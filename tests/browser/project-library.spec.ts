@@ -88,7 +88,20 @@ test('capability fallback, neutral starts and outline icons keep normal editor f
   await expect(page.getByRole('button', { name: 'Hauptordner verbinden …' })).toHaveCount(0);
   expect(await page.getByLabel('Ausgangszustand', { exact: true }).locator('option').allTextContents()).toEqual(['Leer', 'Transparent']);
   await page.getByLabel('Ausgangszustand', { exact: true }).selectOption('transparent');
-  await expect(page.getByRole('button', { name: 'Pipette', exact: true }).locator('svg')).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'Pipette', exact: true }).locator('svg')).toHaveCount(0);
+  const inspectorPipette = page.getByTitle('Pipette aktivieren');
+  await expect(inspectorPipette.locator('svg')).toHaveCount(1);
+  const pipetteGeometry = await inspectorPipette.evaluate((button) => {
+    const box = button.getBoundingClientRect(), icon = button.querySelector('svg')!.getBoundingClientRect();
+    return { width: box.width, height: box.height, iconWidth: icon.width, iconHeight: icon.height, dx: Math.abs(icon.x + icon.width / 2 - box.x - box.width / 2), dy: Math.abs(icon.y + icon.height / 2 - box.y - box.height / 2) };
+  });
+  expect(pipetteGeometry.width).toBe(32);
+  expect(pipetteGeometry.height).toBe(32);
+  expect(pipetteGeometry.iconWidth).toBe(16);
+  expect(pipetteGeometry.iconHeight).toBe(16);
+  expect(pipetteGeometry.dx).toBeLessThanOrEqual(1);
+  expect(pipetteGeometry.dy).toBeLessThanOrEqual(1);
+  expect((await page.locator('.ab-layer-entry').first().boundingBox())?.height).toBe(48);
   await expect(page.locator('.ab-layer').getByTitle('Sperren').locator('svg')).toHaveCount(1);
   const layer = page.locator('.ab-layer.selected').first();
   await layer.hover(); expect(await layer.evaluate((node) => getComputedStyle(node).backgroundColor)).toBe('rgb(99, 85, 116)');
