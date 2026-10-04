@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "bundleId": "2-2026.10.02.3",
-  "downloadUrl": "https://updates.northcore-eu.de/asset-editor/beta/bundles/2-2026.10.02.3.zip",
-  "checksum": "e16a0e8fa6984a00b3e3971dc326838b56845c4310aaa5ec7822a8c109399ccf",
-  "signature": "qVr5ec2IlCCZ09OTP7MuOrC5yKlQ9z7KSM0D39gE41SYr1/9w7IU5blkbI6T3abeNmQ401mZQIKrdt9z4W2fmNBtSnv9xPndtZYoEGIyh8SpmppnmPj7Tp5ol9AlfUOICFiZXdddFtLFmnKZ0d+U50ACA2rj3ZeqJsyOBoVG+j9S/1vHgO7go8bziIrCxQ3b/HRx5Rv0I46u474lqEf0DqrfWLDvwlQCnfQucfc2KjeR+BsHuILfQGTnLPUadfu9v4mjPDZ6gN6XeD9ZRC0A+tVXjJrPw70HJW/g5nOLG3Lc97t14IwvbAFJf/hWya8XQRgUQCjl2NwN6uF34b2A/lD0uI8HeaA78/4MHkPYP1Q+4jBlPYlHPr8WfsN0c5exVfM3QNrxc+keYkayZrOFS4cWeD7IZ8O9AOvLwr1Ld6LKDTVrTBoZiTWcGxPVxX1PrI7Ef8MozFFoq3ppXKmQBXQX3Lf3GlZs4fzR2RolaOzOnAQoL3VabY2PqfyBWgDk",
+  "bundleId": "2-2026.10.04.1",
+  "downloadUrl": "https://updates.northcore-eu.de/asset-editor/beta/bundles/2-2026.10.04.1.zip",
+  "checksum": "b614cf4e83546d9ca1ced88a40032d3a0422c0f3cfc00e1b04be3a51a4a30cac",
+  "signature": "p9r/K4BYyERLJ0aTL0ZXX6iBuru//FXXjBnamuUms+/AtYmVg2pdFVrqU3KJw/Wxgdqszm41kluDhWY+rKi4RUQQAmyHib9dMphqn5QGHAo8FsJwOWcwXWWpfq9a/J0zyNw3SUqjOWV+k7exr1NKPIn1KSdKaaPXuAB6gazrecjL4PxW0JU7j183ZmXicQueTVcQuTvVOCPr8GWXOHIHOedwaZYcHHMUuuS/fue85tNjiuXbCY+DQifMJbGNJKUCgAIXRMwyrzGTK1oU2go/Zn9HVxmsYeuTHi5HqpRO1qV+XPUqlITsJ/6GTVV1de4WHalVMLK74dDKbbetlv53dfDdhChaypuRDf+ifoyp1UxuV5iYSfhQjYkqGUjNyHaLRfXC6gOfq2Ee43wF2FxQUBTPRrzhKf/DSeLcnKPxAyJTxh5smePrveRQ9czrKkUseNiZZ7zNH7CSt4ptl5wTKiHytPf2OK8/V4Pxz0s/Gt0TEhdgYo71XbP8B0edl6Em",
   "minimumNativeVersionCode": 2,
   "maximumNativeVersionCode": 2
 }
