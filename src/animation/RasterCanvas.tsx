@@ -74,9 +74,32 @@ export function RasterCanvas({ store }: { store: AnimationStore }) {
     };
     const previewReference = () =>
       dragging?.reference ? shiftReference(dragging.reference, delta()) : store.reference;
-    const checker = (v: Viewport) => {
+    const referenceCoversCell = (reference: Reference | null, p: Point) => {
+      if (!reference?.visible) return false;
+      const b = reference.bounds,
+        left = Math.max(p.x, b.x),
+        top = Math.max(p.y, b.y),
+        right = Math.min(p.x + 1, b.x + b.width),
+        bottom = Math.min(p.y + 1, b.y + b.height);
+      const edgeTolerance = 1e-5;
+      if (left >= right - edgeTolerance || top >= bottom - edgeTolerance) return false;
+      const snapEdge = (value: number) => {
+          const nearest = Math.round(value);
+          return Math.abs(value - nearest) < edgeTolerance ? nearest : value;
+        },
+        x0 = Math.max(0, Math.floor(snapEdge(((left - b.x) * reference.width) / b.width))),
+        y0 = Math.max(0, Math.floor(snapEdge(((top - b.y) * reference.height) / b.height))),
+        x1 = Math.min(reference.width, Math.ceil(snapEdge(((right - b.x) * reference.width) / b.width))),
+        y1 = Math.min(reference.height, Math.ceil(snapEdge(((bottom - b.y) * reference.height) / b.height)));
+      for (let y = y0; y < y1; y++)
+        for (let x = x0; x < x1; x++)
+          if (reference.rgba[(y * reference.width + x) * 4 + 3]! > 0) return true;
+      return false;
+    };
+    const checker = (v: Viewport, reference: Reference | null) => {
       for (let y = 0; y < SIZE; y++)
         for (let x = 0; x < SIZE; x++) {
+          if (referenceCoversCell(reference, { x, y })) continue;
           const e = v.edge({ x, y });
           if (e.x > width || e.y > height || e.x + v.cell < 0 || e.y + v.cell < 0) continue;
           ctx.fillStyle = (x + y) % 2 ? '#22262a' : '#3e4348';
@@ -90,8 +113,10 @@ export function RasterCanvas({ store }: { store: AnimationStore }) {
         if (layer.pixels.get(k) === pixels.get(k)) continue;
         const p = point(k),
           e = viewport.edge(p);
-        ctx.fillStyle = (p.x + p.y) % 2 ? '#22262a' : '#3e4348';
-        ctx.fillRect(e.x, e.y, viewport.cell, viewport.cell);
+        if (!referenceCoversCell(previewReference(), p)) {
+          ctx.fillStyle = (p.x + p.y) % 2 ? '#22262a' : '#3e4348';
+          ctx.fillRect(e.x, e.y, viewport.cell, viewport.cell);
+        }
         ctx.fillStyle = cssColor(sample(layers, k));
         ctx.fillRect(e.x, e.y, viewport.cell, viewport.cell);
       }
@@ -110,7 +135,7 @@ export function RasterCanvas({ store }: { store: AnimationStore }) {
       ctx.clearRect(0, 0, width, height);
       ctx.fillStyle = '#10171b';
       ctx.fillRect(0, 0, width, height);
-      checker(viewport);
+      checker(viewport, previewReference());
       ctx.save();
       ctx.beginPath();
       ctx.rect(viewport.x, viewport.y, SIZE * viewport.cell, SIZE * viewport.cell);

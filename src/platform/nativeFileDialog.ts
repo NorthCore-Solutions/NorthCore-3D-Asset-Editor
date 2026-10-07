@@ -17,9 +17,26 @@ interface NativeSaveFileResult {
   name?: string;
 }
 
+export interface NativeDirectoryEntry {
+  treeUri: string;
+  documentId: string;
+  name: string;
+  kind: 'file' | 'directory';
+}
+
+interface NativeDocumentOptions { treeUri: string; documentId: string }
+
 interface NativeFileDialogPlugin {
   saveFile(options: NativeSaveFileOptions): Promise<NativeSaveFileResult>;
   writeFile(options: NativeWriteFileOptions): Promise<void>;
+  pickDirectory(): Promise<{ cancelled?: boolean; directory?: NativeDirectoryEntry }>;
+  rememberedDirectory(): Promise<{ directory?: NativeDirectoryEntry | null }>;
+  clearRememberedDirectory(): Promise<void>;
+  directoryPermission(options: NativeDocumentOptions): Promise<{ granted: boolean }>;
+  listDirectory(options: NativeDocumentOptions): Promise<{ entries: NativeDirectoryEntry[] }>;
+  getDirectoryFile(options: NativeDocumentOptions & { name: string; create: boolean }): Promise<{ file: NativeDirectoryEntry }>;
+  readDocument(options: NativeDocumentOptions): Promise<{ base64: string }>;
+  writeDocument(options: NativeDocumentOptions & { base64: string }): Promise<void>;
 }
 
 export interface SavedFileReference {
@@ -27,12 +44,12 @@ export interface SavedFileReference {
   uri: string | null;
 }
 
-const NativeFileDialog = registerPlugin<NativeFileDialogPlugin>('NativeFileDialog');
+export const NativeFileDialog = registerPlugin<NativeFileDialogPlugin>('NativeFileDialog');
 
 export const isNativeAndroid = (): boolean =>
   Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
 
-async function blobToBase64(blob: Blob): Promise<string> {
+export async function blobToBase64(blob: Blob): Promise<string> {
   const bytes = new Uint8Array(await blob.arrayBuffer());
   const chunkSize = 0x8000;
   let binary = '';

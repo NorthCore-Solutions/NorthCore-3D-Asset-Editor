@@ -1,4 +1,6 @@
 import { RASTER_DOCUMENT_EXTENSION } from './files';
+import { isNativeAndroid } from '../platform/nativeFileDialog';
+import { pickNativeProjectDirectory, rememberedNativeProjectDirectory } from './nativeProjectDirectory';
 
 export interface ProjectFileHandle {
   kind: 'file'; name: string;
@@ -13,15 +15,27 @@ export interface ProjectDirectoryHandle {
   requestPermission(options: { mode: 'readwrite' }): Promise<PermissionState>;
 }
 type DirectoryWindow = Window & { showDirectoryPicker?: (options: { mode: 'readwrite' }) => Promise<ProjectDirectoryHandle> };
-export const supportsProjectDirectory = () => typeof window !== 'undefined' && typeof (window as DirectoryWindow).showDirectoryPicker === 'function';
+export const supportsProjectDirectory = () => isNativeAndroid() || (typeof window !== 'undefined' && typeof (window as DirectoryWindow).showDirectoryPicker === 'function');
 export function pickProjectDirectory() {
+  if (isNativeAndroid()) return pickNativeProjectDirectory();
   const picker = (window as DirectoryWindow).showDirectoryPicker;
   if (!picker) throw Error('Ordnerbindung wird hier nicht unterstützt. Datei-Import und Export bleiben verfügbar.');
   return picker.call(window, { mode: 'readwrite' });
 }
 
-/** Persist only the structured-cloneable root handle, never a directory tree. */
+/** Android grants must be renewed through the system picker, which may return a different root. */
+export async function authorizeProjectDirectory(directory: ProjectDirectoryHandle): Promise<ProjectDirectoryHandle | undefined> {
+  if (isNativeAndroid()) return pickNativeProjectDirectory();
+  return await directory.requestPermission({ mode: 'readwrite' }) === 'granted' ? directory : undefined;
+}
+export const isProjectDirectoryAccessError = (error: unknown) => error instanceof DOMException && (error.name === 'NotAllowedError' || error.name === 'SecurityError');
+
+/** Web persists a structured-cloneable handle; Android persists the URI and grant natively. */
 export async function rememberedProjectDirectory(handle?: ProjectDirectoryHandle | null): Promise<ProjectDirectoryHandle | undefined> {
+  if (isNativeAndroid()) {
+    // Selecting the tree already persisted its URI in NativeFileDialogPlugin.
+    return handle ?? rememberedNativeProjectDirectory(handle === null);
+  }
   const db = await new Promise<IDBDatabase>((resolve, reject) => {
     const request = indexedDB.open('northcore-raster128-directory', 1); let abandoned = false;
     request.onupgradeneeded = () => request.result.createObjectStore('handles');

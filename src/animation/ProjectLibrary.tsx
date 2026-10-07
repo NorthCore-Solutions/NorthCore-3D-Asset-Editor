@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { animationStore as store } from './store';
 import { importRasterDocument, serializeSession } from './files';
-import { pickProjectDirectory, supportsProjectDirectory, rememberedProjectDirectory, projectEntries, projectFileName, writeProjectFile, projectFlyoutPosition } from './projectDirectory';
+import { pickProjectDirectory, supportsProjectDirectory, rememberedProjectDirectory, authorizeProjectDirectory, isProjectDirectoryAccessError, projectEntries, projectFileName, writeProjectFile, projectFlyoutPosition } from './projectDirectory';
 import type { ProjectDirectoryHandle, ProjectFileHandle } from './projectDirectory';
 import type { BuilderDialogs } from './useBuilderDialogs';
 
@@ -22,9 +22,15 @@ export function ProjectLibrary({ ui }: { ui: Pick<BuilderDialogs, 'setMessage' |
   const busy = useRef(false);
   const currentTarget = target && store.isCurrentSession(target.session) ? target.file : undefined;
   const supported = supportsProjectDirectory();
-  const { setMessage, setModal, report } = ui;
+  const { setMessage, setModal, report: reportTask } = ui;
   const invalidateListing = useCallback(() => { listing.current++; }, []);
   const close = useCallback(() => { generation.current++; setChain([]); }, []);
+  const report = useCallback((task: Promise<unknown>) => reportTask(task.catch((error: unknown) => {
+    if (error instanceof DOMException && error.name === 'AbortError') return;
+    if (!isProjectDirectoryAccessError(error)) throw error;
+    invalidateListing(); close(); setGranted(false); setEntries([]); setTarget(undefined);
+    setMessage('Ordnerzugriff ist nicht mehr gültig. Bitte den Hauptordner erneut verbinden oder freigeben.');
+  })), [reportTask, invalidateListing, close, setMessage]);
   const refresh = useCallback(async () => {
     if (!root) return;
     const id = ++listing.current;
@@ -76,8 +82,14 @@ export function ProjectLibrary({ ui }: { ui: Pick<BuilderDialogs, 'setMessage' |
     } catch (error) { if (!(error instanceof DOMException && error.name === 'AbortError')) throw error; }
   };
   const authorize = async () => {
-    if (root && await root.requestPermission({ mode: 'readwrite' }) === 'granted') await refresh();
-    else setMessage('Ordnerzugriff nicht erteilt. Datei-Import und Export bleiben verfügbar.');
+    if (!root) return;
+    const handle = await authorizeProjectDirectory(root);
+    if (!handle) { setMessage('Ordnerzugriff nicht erteilt. Datei-Import und Export bleiben verfügbar.'); return; }
+    if (handle === root) { await refresh(); return; }
+    rootEpoch.current++;
+    close(); setRoot(handle); setTarget(undefined);
+    try { await rememberedProjectDirectory(handle); }
+    catch { setMessage('Ordner verbunden; Wiederverwendung nach Neustart ist hier nicht verfügbar.'); }
   };
   const openFolder = async (directory: ProjectDirectoryHandle, depth: number, anchor: DOMRect) => {
     const id = ++generation.current;

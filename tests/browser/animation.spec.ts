@@ -136,6 +136,80 @@ test('reference original RGBA, wheel anchor and editor-only export', async ({ pa
   expect((await download).suggestedFilename()).toContain('1024.png');
 });
 
+test('reference alpha coverage hides only its checker cells and follows live movement', async ({ page }) => {
+  await launch(page);
+  const centers = await page.evaluate(async () => {
+    const path = '/src/animation/store.ts';
+    const { animationStore: s } = (await import(
+      performance
+        .getEntriesByType('resource')
+        .filter((e) => new URL(e.name).pathname === path)
+        .at(-1)?.name ?? path
+    )) as typeof StoreModule;
+    const canvas = document.querySelector<HTMLCanvasElement>('.ab-canvas')!,
+      rect = canvas.getBoundingClientRect();
+    const available = Math.max(128, canvas.clientHeight - 120),
+      side = Math.min(canvas.clientWidth, available) * 0.84,
+      left = (canvas.clientWidth - side) / 2,
+      top = (available - side) / 2,
+      cell = side / 128;
+    s.setReference({
+      name: 'red-transparent-green',
+      width: 3,
+      height: 1,
+      rgba: new Uint8Array([255, 0, 0, 255, 0, 0, 0, 0, 0, 255, 0, 255]),
+      bounds: { x: 10, y: 10, width: 3, height: 1 },
+      visible: true,
+      aligned: false,
+    });
+    s.selectTool('grab');
+    const center = (x: number, y: number) => ({
+      x: rect.left + left + (x + 0.5) * cell,
+      y: rect.top + top + (y + 0.5) * cell,
+    });
+    return { start: center(10, 10), moved: center(12, 10), cell };
+  });
+  const readCells = (referenceX = 10) => page.evaluate((refX: number) => {
+    const canvas = document.querySelector<HTMLCanvasElement>('.ab-canvas')!,
+      ctx = canvas.getContext('2d')!,
+      available = Math.max(128, canvas.clientHeight - 120),
+      side = Math.min(canvas.clientWidth, available) * 0.84,
+      left = (canvas.clientWidth - side) / 2,
+      top = (available - side) / 2,
+      cell = side / 128,
+      ratioX = canvas.width / canvas.clientWidth,
+      ratioY = canvas.height / canvas.clientHeight;
+    const readCell = (x: number, y: number) => [...ctx.getImageData(
+      Math.floor((left + (x + 0.5) * cell) * ratioX),
+      Math.floor((top + (y + 0.5) * cell) * ratioY),
+      1,
+      1
+    ).data];
+    return {
+      reference: readCell(refX, 10),
+      outside: readCell(9, 10),
+      transparent: readCell(refX + 1, 10),
+      oldPosition: readCell(10, 10),
+    };
+  }, referenceX);
+  let pixels = await readCells();
+  expect(pixels.outside.slice(0, 3)).toEqual([34, 38, 42]);
+  expect(pixels.reference.slice(0, 3)).toEqual([112, 14, 16]);
+  expect(pixels.transparent.slice(0, 3)).toEqual([34, 38, 42]);
+
+  await page.mouse.move(centers.start.x, centers.start.y);
+  await page.mouse.down();
+  await page.mouse.move(centers.moved.x, centers.moved.y);
+  pixels = await readCells(12);
+  expect(pixels.oldPosition.slice(0, 3)).toEqual([62, 67, 72]);
+  expect(pixels.reference.slice(0, 3)).toEqual([112, 14, 16]);
+  expect(pixels.transparent.slice(0, 3)).toEqual([34, 38, 42]);
+  await page.mouse.up();
+  pixels = await readCells(12);
+  expect(pixels.oldPosition.slice(0, 3)).toEqual([62, 67, 72]);
+  expect(pixels.reference.slice(0, 3)).toEqual([112, 14, 16]);
+});
+
 test('tablet touch drawing, pinch cancels stroke, panels keep canvas geometry', async ({ browser }) => {
   const context = await browser.newContext({
     viewport: { width: 820, height: 1180 },
