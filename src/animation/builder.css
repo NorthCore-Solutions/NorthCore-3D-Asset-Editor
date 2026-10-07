@@ -131,6 +131,8 @@
 .ab-layer-menu > div button:not(.danger) { min-height: 28px; padding: 0 8px; text-align: left; font-size: 12px; white-space: nowrap; border: 0; background: transparent; }
 .ab-library-row { display: flex; width: 100%; align-items: center; margin: 5px 0; gap: 3px; }
 .ab-library-row > button:first-child { flex: 1; text-align: left; }
+.ab-group .ab-auto-color { display: flex; gap: 6px; }
+.ab-auto-color input[type='checkbox'] { width: 16px; height: 16px; margin: 0; flex-shrink: 0; }
 .ab-color { display: flex; align-items: center; gap: 6px; margin: 8px 0; }
 .ab-inspector-eyedropper { display: grid; place-items: center; flex: 0 0 32px; width: 32px; height: 32px; min-height: 32px; padding: 0; }
 .ab-inspector-eyedropper .ab-outline-icon { width: 16px; height: 16px; }

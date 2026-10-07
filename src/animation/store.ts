@@ -32,6 +32,7 @@ export class AnimationStore {
   selection: ReadonlySet<number> | null = null;
   templates: PixelAsset[] = [];
   color = 0xff3366ff;
+  autoReferenceColor = false;
   pencilSize = 1;
   eraserSize = 1;
   tool: Tool = 'rect';
@@ -371,6 +372,7 @@ export class Stroke {
   readonly pixels: Map<number, number>;
   private last: Point;
   private readonly color: number;
+  private readonly reference: Reference | null;
   private readonly size: number;
   private readonly selection: ReadonlySet<number> | null;
   constructor(
@@ -383,6 +385,9 @@ export class Stroke {
     this.pixels = new Map(this.layer.pixels);
     this.last = p;
     this.color = store.color;
+    this.reference = !erase && store.autoReferenceColor && store.reference?.visible
+      ? store.reference
+      : null;
     this.size = erase ? store.eraserSize : store.pencilSize;
     this.selection = store.selection;
     this.move(p);
@@ -395,7 +400,10 @@ export class Stroke {
           const k = y * 128 + x;
           if (!contains(x, y) || (this.selection && !this.selection.has(k))) continue;
           if (this.erase) this.pixels.delete(k);
-          else this.pixels.set(k, this.color);
+          else {
+            const color = this.reference ? referenceSample(this.reference, { x, y }) : this.color;
+            if (color !== null) this.pixels.set(k, color);
+          }
         }
     }
     this.last = p;

@@ -28,6 +28,8 @@ async function state(page: Page) {
     )) as typeof StoreModule;
     return {
       commits: s.commits,
+      version: s.version,
+      history: s.past.length,
       pixels: [...(s.layer?.pixels ?? [])],
       frames: s.state.frames.length,
       templates: s.templates.length,
@@ -52,6 +54,86 @@ async function menu(page: Page, label: string, action: string) {
   await page.locator('.ab-menu > summary').getByText(label, { exact: true }).click();
   await page.locator('.ab-menu[open]').getByText(action, { exact: true }).click();
 }
+
+
+async function rasterPixels(page: Page, cells: { x: number; y: number }[]) {
+  return page.evaluate((cells) => {
+    const canvas = document.querySelector<HTMLCanvasElement>('.ab-canvas')!,
+      ctx = canvas.getContext('2d')!,
+      rect = canvas.getBoundingClientRect(),
+      available = Math.max(128, rect.height - 120),
+      side = Math.min(rect.width, available) * 0.84,
+      left = (rect.width - side) / 2,
+      top = (available - side) / 2;
+    return cells.map(({ x, y }) => [...ctx.getImageData(
+      Math.floor((left + (x + 0.5) * side / 128) * canvas.width / rect.width),
+      Math.floor((top + (y + 0.5) * side / 128) * canvas.height / rect.height),
+      1, 1
+    ).data]);
+  }, cells);
+}
+
+test('eraser reveals reference, checker and lower layer before pointerup without store updates', async ({ page }) => {
+  await launch(page);
+  await page.evaluate(async () => {
+    const path = '/src/animation/store.ts';
+    const { animationStore: s } = (await import(
+      performance.getEntriesByType('resource').filter((e) => new URL(e.name).pathname === path).at(-1)?.name ?? path
+    )) as typeof StoreModule;
+    const layer = s.layer!;
+    s.editFrame({ ...s.frame, layers: [
+      { ...layer, id: 'lower', pixels: new Map([[2580, 0x00ffffff]]) },
+      { ...layer, pixels: new Map([20, 21, 22, 23, 24].map((x) => [20 * 128 + x, 0xff0000ff])) },
+    ] });
+    s.setReference({ name: 'reference', width: 2, height: 1,
+      rgba: new Uint8Array([255, 0, 0, 255, 0, 0, 0, 0]),
+      bounds: { x: 21, y: 20, width: 2, height: 1 }, visible: true, aligned: false });
+    s.selectTool('eraser');
+  });
+  const before = await state(page), start = await cell(page, 20, 20), end = await cell(page, 24, 20);
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(end.x, end.y);
+  expect(await rasterPixels(page, [20, 21, 22, 23].map((x) => ({ x, y: 20 })))).toEqual([
+    [0, 255, 255, 255], [112, 14, 16, 255], [62, 67, 72, 255], [34, 38, 42, 255],
+  ]);
+  expect(await state(page)).toEqual(before);
+  await page.mouse.up();
+  const after = await state(page);
+  expect(after.pixels).toHaveLength(0);
+  expect(after.commits).toBe(before.commits + 1);
+  expect(after.history).toBe(before.history + 1);
+  await page.getByTitle('Rückgängig', { exact: true }).click();
+  expect((await state(page)).pixels).toEqual(before.pixels);
+});
+
+test('automatic color checkbox paints several reference colors live in one stroke', async ({ page }) => {
+  await launch(page);
+  await page.evaluate(async () => {
+    const path = '/src/animation/store.ts';
+    const { animationStore: s } = (await import(
+      performance.getEntriesByType('resource').filter((e) => new URL(e.name).pathname === path).at(-1)?.name ?? path
+    )) as typeof StoreModule;
+    s.setReference({ name: 'colors', width: 3, height: 1,
+      rgba: new Uint8Array([255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255]),
+      bounds: { x: 30, y: 30, width: 3, height: 1 }, visible: true, aligned: false });
+  });
+  await page.getByRole('checkbox', { name: 'Automatische Farbauswahl' }).check();
+  await page.getByRole('button', { name: 'Stift', exact: true }).click();
+  const before = await state(page), start = await cell(page, 30, 30), end = await cell(page, 32, 30);
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(end.x, end.y);
+  expect(await rasterPixels(page, [30, 31, 32].map((x) => ({ x, y: 30 })))).toEqual([
+    [255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255],
+  ]);
+  expect(await state(page)).toEqual(before);
+  await page.mouse.up();
+  const after = await state(page);
+  expect(after.pixels).toEqual([[3870, 0xff0000ff], [3871, 0x00ff00ff], [3872, 0x0000ffff]]);
+  expect(after.history).toBe(before.history + 1);
+  expect(after.color).toBe(before.color);
+});
 
 test('desktop raster painting, selection move/stretch, picker, frames and history remain native', async ({ page }) => {
   await launch(page);

@@ -113,6 +113,9 @@ export function RasterCanvas({ store }: { store: AnimationStore }) {
         if (layer.pixels.get(k) === pixels.get(k)) continue;
         const p = point(k),
           e = viewport.edge(p);
+        // Replace the cached cell before compositing transparent or erased pixels.
+        ctx.fillStyle = '#10171b';
+        ctx.fillRect(e.x, e.y, viewport.cell, viewport.cell);
         if (!referenceCoversCell(previewReference(), p)) {
           ctx.fillStyle = (p.x + p.y) % 2 ? '#22262a' : '#3e4348';
           ctx.fillRect(e.x, e.y, viewport.cell, viewport.cell);

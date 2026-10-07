@@ -102,6 +102,17 @@ export function BuilderInspector({ open: right, onToggle, mode, ui }: {
             'Pixel & Farbe',
             <>
               <small>Aktiv: {current?.name ?? 'Kein Layer'}</small>
+              <label className="ab-auto-color">
+                <input
+                  type="checkbox"
+                  checked={store.autoReferenceColor}
+                  onChange={(e) => {
+                    store.autoReferenceColor = e.target.checked;
+                    store.emit();
+                  }}
+                />
+                Automatische Farbauswahl
+              </label>
               <div className="ab-color">
                 <button
                   className="ab-color-swatch"

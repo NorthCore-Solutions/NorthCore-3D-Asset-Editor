@@ -19,6 +19,80 @@ function empty() {
   return s;
 }
 describe('ported Raster128 contract', () => {
+  const multicolorReference: Reference = {
+    name: 'colors', width: 3, height: 2,
+    rgba: new Uint8Array([255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 128,
+      255, 255, 0, 255, 10, 20, 30, 0, 255, 0, 255, 255]),
+    bounds: { x: 10, y: 20, width: 3, height: 2 }, visible: true, aligned: false,
+  };
+  it('automatic stroke samples every interpolated cell live without changing manual color or emitting', () => {
+    const s = empty();
+    s.setReference(multicolorReference);
+    s.autoReferenceColor = true;
+    const before = s.state, version = s.version, history = s.past.length, color = s.color;
+    const stroke = new Stroke(s, { x: 9, y: 20 }, false);
+    stroke.move({ x: 13, y: 20 });
+    expect([...stroke.pixels]).toEqual([[2570, 0xff0000ff], [2571, 0x00ff00ff], [2572, 0x0000ff80]]);
+    expect(s.state).toBe(before);
+    expect(s.version).toBe(version);
+    expect(s.color).toBe(color);
+    stroke.commit();
+    expect(s.past).toHaveLength(history + 1);
+    expect(s.layer!.pixels).toEqual(stroke.pixels);
+    s.undo();
+    expect(s.layer!.pixels.size).toBe(0);
+  });
+  it('large automatic brush samples each cell, skips transparency and obeys selection', () => {
+    const s = empty();
+    s.setReference(multicolorReference);
+    s.autoReferenceColor = true;
+    s.pencilSize = 3;
+    const stroke = new Stroke(s, { x: 11, y: 20 }, false);
+    expect(stroke.pixels.size).toBe(5);
+    for (const [k, color] of stroke.pixels) {
+      expect(color).toBe(referenceSample(multicolorReference, { x: k % 128, y: Math.floor(k / 128) }));
+    }
+    expect(stroke.pixels.has(21 * 128 + 11)).toBe(false);
+    expect(stroke.pixels.has(19 * 128 + 11)).toBe(false);
+    s.selection = new Set([20 * 128 + 12]);
+    expect([...new Stroke(s, { x: 11, y: 20 }, false).pixels]).toEqual([[2572, 0x0000ff80]]);
+    s.editLayer(s.layer!.id, { locked: true });
+    expect(() => new Stroke(s, { x: 11, y: 20 }, false)).toThrow('Layer ist nicht bearbeitbar.');
+  });
+  it('automatic sampling follows scaled and shifted reference bounds', () => {
+    const s = empty();
+    s.setReference({ ...multicolorReference, bounds: { x: 30.25, y: 40.25, width: 6, height: 4 } });
+    s.autoReferenceColor = true;
+    const stroke = new Stroke(s, { x: 30, y: 40 }, false);
+    stroke.move({ x: 35, y: 40 });
+    expect([...stroke.pixels.values()]).toEqual([0xff0000ff, 0xff0000ff, 0x00ff00ff, 0x00ff00ff, 0x0000ff80, 0x0000ff80]);
+  });
+  it.each(['disabled', 'absent', 'hidden'] as const)('manual painting is unchanged when automation is %s', (kind) => {
+    const s = empty();
+    if (kind !== 'absent') s.setReference({ ...multicolorReference, visible: kind !== 'hidden' });
+    s.autoReferenceColor = kind !== 'disabled';
+    const stroke = new Stroke(s, { x: 9, y: 20 }, false);
+    stroke.move({ x: 13, y: 20 });
+    expect(stroke.pixels.size).toBe(5);
+    expect([...stroke.pixels.values()]).toEqual(Array(5).fill(s.color));
+  });
+  it('eraser ignores automatic color and commits its interpolated removal once', () => {
+    const s = empty();
+    new Stroke(s, { x: 10, y: 20 }, false).commit();
+    s.setReference(multicolorReference);
+    s.autoReferenceColor = true;
+    const before = s.state, version = s.version, history = s.past.length;
+    const stroke = new Stroke(s, { x: 9, y: 20 }, true);
+    stroke.move({ x: 13, y: 20 });
+    expect(stroke.pixels.size).toBe(0);
+    expect(s.state).toBe(before);
+    expect(s.version).toBe(version);
+    stroke.commit();
+    expect(s.past).toHaveLength(history + 1);
+    s.undo();
+    expect(s.layer!.pixels.has(2570)).toBe(true);
+  });
+
   it.each([1, 2, 3, 4, 5, 6, 7, 8])('square pencil/eraser size %i with fixed anchor', (size) => {
     const s = empty();
     s.pencilSize = size;
